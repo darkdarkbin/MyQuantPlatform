@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 포트폴리오 관리</title>
+
+<!-- 차트 라이브러리: Chart.js를 CDN(인터넷상의 코드 저장소)에서 바로 불러옵니다.
+     별도 설치가 필요 없고, 인터넷에 연결된 상태에서 이 파일을 열면 자동으로 로드됩니다. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+
+<style>
+  /* ===================== 디자인 토큰 (색상/타이포 변수) ===================== */
+  :root{
+    --bg:            #0B1220;   /* 전체 배경: 짙은 네이비 (증권사 HTS 느낌) */
+    --surface:       #131B2E;   /* 카드 배경 */
+    --surface-2:     #1B2540;   /* 살짝 더 밝은 카드 (입력폼 등) */
+    --border:        #2A3550;
+    --text:          #E7ECF7;
+    --text-dim:      #8B96B3;
+    --accent-mint:   #34D399;   /* 상승/양수 */
+    --accent-rose:   #F87171;   /* 하락/음수 */
+    --accent-gold:   #F2B84B;   /* 강조/경고 */
+    --accent-indigo: #6C7BFF;   /* 포인트 컬러 */
+    --radius: 14px;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Pretendard, 'Malgun Gothic', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); line-height:1.5; padding:32px 20px 80px;
+  }
+  h1,h2,h3{ font-weight:700; margin:0 0 4px; }
+  .subtitle{ color:var(--text-dim); font-size:14px; margin:0 0 28px; }
+
+  .wrap{ max-width:1180px; margin:0 auto; }
+
+  /* ===================== 상단 요약 카드 ===================== */
+  .stat-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:14px; margin-bottom:28px;
+  }
+  .stat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .stat-label{ font-size:12px; color:var(--text-dim); margin-bottom:6px; }
+  .stat-value{ font-family:var(--mono); font-size:24px; font-weight:700; }
+  .pos{ color:var(--accent-mint); } .neg{ color:var(--accent-rose); }
+
+  /* ===================== 공통 카드/섹션 ===================== */
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:22px; margin-bottom:22px;
+  }
+  .card h2{ font-size:16px; display:flex; align-items:center; gap:8px; }
+  .card h2 .idx{ color:var(--accent-indigo); font-family:var(--mono); }
+  .card-desc{ color:var(--text-dim); font-size:13px; margin:2px 0 18px; }
+
+  .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:22px; }
+  @media(max-width:900px){ .grid-2{ grid-template-columns:1fr; } }
+
+  /* ===================== 폼 ===================== */
+  .form-row{ display:grid; grid-template-columns:repeat(6,1fr) auto; gap:8px; margin-bottom:10px; }
+  @media(max-width:900px){ .form-row{ grid-template-columns:repeat(2,1fr); } }
+  label{ font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px; }
+  input, textarea, select{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:9px 10px; font-family:var(--sans); font-size:13px;
+  }
+  input:focus, textarea:focus{ outline:2px solid var(--accent-indigo); }
+  textarea{ font-family:var(--mono); resize:vertical; }
+  button{
+    cursor:pointer; border:none; border-radius:8px; padding:10px 16px;
+    font-weight:600; font-size:13px; font-family:var(--sans);
+  }
+  .btn-primary{ background:var(--accent-indigo); color:#fff; }
+  .btn-primary:hover{ opacity:.9; }
+  .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--text-dim); }
+  .btn-ghost:hover{ color:var(--text); border-color:var(--text-dim); }
+  .btn-danger{ background:transparent; color:var(--accent-rose); border:1px solid rgba(248,113,113,.35); }
+  .btn-sm{ padding:6px 10px; font-size:12px; }
+
+  /* ===================== 테이블 ===================== */
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ text-align:right; color:var(--text-dim); font-weight:500; font-size:11px; padding:8px 10px; border-bottom:1px solid var(--border); }
+  th:first-child, td:first-child{ text-align:left; }
+  td{ text-align:right; padding:10px; border-bottom:1px solid var(--border); font-family:var(--mono); }
+  tr:last-child td{ border-bottom:none; }
+  .name-cell{ font-family:var(--sans); }
+  .name-cell .sym{ font-weight:700; }
+  .name-cell .full{ color:var(--text-dim); font-size:11px; }
+  .tag{ display:inline-block; padding:2px 8px; border-radius:100px; font-size:11px; font-family:var(--sans); }
+  .tag-buy{ background:rgba(52,211,153,.15); color:var(--accent-mint); }
+  .tag-sell{ background:rgba(248,113,113,.15); color:var(--accent-rose); }
+  .tag-hold{ background:rgba(139,150,179,.15); color:var(--text-dim); }
+
+  .weight-warn{ color:var(--accent-gold); font-size:12px; margin-top:8px; }
+  .weight-ok{ color:var(--accent-mint); font-size:12px; margin-top:8px; }
+
+  .toggle-history{ color:var(--accent-indigo); background:none; border:none; font-size:12px; text-decoration:underline; cursor:pointer; padding:0; }
+  .history-box{ display:none; margin-top:10px; padding:12px; background:var(--surface-2); border-radius:8px; }
+  .history-box.open{ display:block; }
+  .history-box .row{ display:grid; grid-template-columns:1fr; gap:6px; margin-bottom:8px; }
+  .history-box small{ color:var(--text-dim); display:block; margin-bottom:6px; line-height:1.5; }
+
+  .chart-wrap{ position:relative; height:280px; }
+  .donut-wrap{ position:relative; height:260px; display:flex; align-items:center; justify-content:center; }
+  .donut-center{ position:absolute; text-align:center; pointer-events:none; }
+  .donut-center .amt{ font-family:var(--mono); font-size:20px; font-weight:700; }
+  .donut-center .lbl{ font-size:11px; color:var(--text-dim); }
+
+  .empty{ color:var(--text-dim); font-size:13px; text-align:center; padding:30px 0; }
+
+  .footer-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+  .note{ font-size:12px; color:var(--text-dim); margin-top:14px; line-height:1.6; }
+  .note b{ color:var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>📊 내 포트폴리오</h1>
+  <p class="subtitle">종목을 추가하고, 과거 종가를 입력하면 위험도·백테스팅·리밸런싱까지 자동 계산됩니다.</p>
+
+  <!-- ===================== 상단 요약 카드 ===================== -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">총 투자금액(목표)</div>
+      <div class="stat-value" id="statTotalInvestment">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">현재 평가금액</div>
+      <div class="stat-value" id="statCurrentValue">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">평가손익</div>
+      <div class="stat-value" id="statPnL">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">목표비중 합계</div>
+      <div class="stat-value" id="statWeightSum">-</div>
+    </div>
+  </div>
+
+  <!-- ===================== 투자금액 설정 ===================== -->
+  <div class="card">
+    <h2><span class="idx">01</span> 투자 금액 설정</h2>
+    <p class="card-desc">총 투자금액을 입력하면 종목별 목표비중에 따라 배분 금액이 자동 계산됩니다.</p>
+    <div style="max-width:280px;">
+      <label>총 투자금액 (원)</label>
+      <input type="number" id="inputTotalInvestment" value="10000000" step="10000">
+    </div>
+  </div>
+
+  <!-- ===================== 종목 추가 & 포트폴리오 테이블 ===================== -->
+  <div class="card">
+    <h2><span class="idx">02</span> 종목 비중 입력</h2>
+    <p class="card-desc">시세는 네이버증권/구글 파이낸스 등에서 확인 후 직접 입력해 주세요. (현재가는 나중에 계속 업데이트하면서 쓰시면 됩니다)</p>
+
+    <div class="form-row">
+      <div><label>티커/심볼</label><input id="fSymbol" placeholder="예: QQQM"></div>
+      <div><label>종목명</label><input id="fName" placeholder="예: 나스닥100 ETF"></div>
+      <div><label>목표비중(%)</label><input id="fWeight" type="number" step="0.1" placeholder="40"></div>
+      <div><label>보유수량</label><input id="fShares" type="number" step="0.0001" placeholder="12"></div>
+      <div><label>평균매입가</label><input id="fAvgPrice" type="number" step="0.01" placeholder="185.32"></div>
+      <div><label>현재가</label><input id="fCurPrice" type="number" step="0.01" placeholder="198.45"></div>
+      <div style="display:flex; align-items:flex-end;">
+        <button class="btn-primary" onclick="addHolding()" style="width:100%;">추가</button>
+      </div>
+    </div>
+    <div id="weightMsg"></div>
+
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table id="holdingsTable">
+        <thead>
+          <tr>
+            <th>종목</th>
+            <th>목표비중</th>
+            <th>배분금액</th>
+            <th>보유수량</th>
+            <th>평가금액</th>
+            <th>현재비중</th>
+            <th>손익률</th>
+            <th>리밸런싱</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="holdingsBody"></tbody>
+      </table>
+      <div id="emptyMsg" class="empty">아직 추가된 종목이 없습니다. 위에서 종목을 추가해 보세요.</div>
+    </div>
+  </div>
+
+  <!-- ===================== 자산배분 도넛차트 ===================== -->
+  <div class="grid-2">
+    <div class="card">
+      <h2><span class="idx">03</span> 자산 배분</h2>
+      <p class="card-desc">목표비중 기준 자산 배분 현황입니다.</p>
+      <div class="donut-wrap">
+        <canvas id="donutChart"></canvas>
+        <div class="donut-center" id="donutCenter">
+          <div class="amt">-</div>
+          <div class="lbl">총 투자금액</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="idx">04</span> 리밸런싱 요약</h2>
+      <p class="card-desc">현재 평가금액 기준, 목표비중으로 돌아가려면 이렇게 매매하면 됩니다.</p>
+      <div id="rebalanceList"></div>
+    </div>
+  </div>
+
+  <!-- ===================== 위험도 분석 & 백테스팅 ===================== -->
+  <div class="card">
+    <h2><span class="idx">05</span> 위험도 분석 · 백테스팅</h2>
+    <p class="card-desc">
+      각 종목 카드의 <b>"과거 가격 입력"</b>을 눌러 과거 종가를 붙여넣으세요 (오래된 날짜 → 최근 날짜 순, 한 줄에 하나씩).
+      네이버증권 종목 페이지의 &lt;시세&gt; 탭이나 구글에 "AAPL historical prices" 검색 후 표에서 종가만 복사해 붙여넣으면 됩니다.
+      <b>모든 종목의 데이터 개수(줄 수)를 똑같이 맞춰서</b> 입력해야 정확히 계산됩니다 (예: 전 종목 60줄 = 최근 60거래일).
+    </p>
+
+    <div id="historyInputs"></div>
+
+    <div style="margin:18px 0;">
+      <label>(선택) 비교지수 과거 종가 — 베타 계산용, 예: S&P500/코스피</label>
+      <textarea id="benchmarkHistory" rows="3" placeholder="한 줄에 하나씩, 종목들과 같은 개수로 입력"></textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+      <div style="max-width:160px;">
+        <label>백테스팅 기간(년)</label>
+        <input type="number" id="backtestYears" value="3" step="0.5">
+      </div>
+      <button class="btn-primary" onclick="runRiskAnalysis()">위험도 분석 · 백테스팅 실행</button>
+    </div>
+
+    <div class="stat-grid" style="margin-top:20px;">
+      <div class="stat-card">
+        <div class="stat-label">포트폴리오 연율화 변동성</div>
+        <div class="stat-value" id="statVolatility">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">최대낙폭 (MDD)</div>
+        <div class="stat-value" id="statMDD">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">기간 누적수익률</div>
+        <div class="stat-value" id="statCumReturn">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">연평균수익률 (CAGR)</div>
+        <div class="stat-value" id="statCAGR">-</div>
+      </div>
+    </div>
+
+    <div class="chart-wrap" style="margin-top:20px;">
+      <canvas id="backtestChart"></canvas>
+    </div>
+    <div id="riskEmptyMsg" class="empty">과거 가격을 입력하고 실행 버튼을 누르면 여기에 결과가 표시됩니다.</div>
+  </div>
+
+  <!-- ===================== 저장/불러오기 ===================== -->
+  <div class="card">
+    <h2><span class="idx">06</span> 저장 · 불러오기</h2>
+    <p class="card-desc">이 페이지는 새로고침하면 입력값이 사라집니다. 작업을 마치면 파일로 저장해 두었다가, 다음에 열 때 불러오세요.</p>
+    <div class="footer-actions">
+      <button class="btn-ghost" onclick="exportData()">💾 파일로 저장</button>
+      <label class="btn-ghost" style="display:inline-block;">
+        📂 파일 불러오기
+        <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+      </label>
+    </div>
+    <p class="note">
+      <b>사용법:</b> 이 파일(my-portfolio.html)은 인터넷 브라우저(크롬/엣지 등)로 더블클릭해서 여는 것만으로 바로 작동합니다.
+      VS Code는 파일을 보관/편집하는 용도일 뿐, 이 웹사이트 자체는 npm 설치나 서버 실행 없이 이 파일 하나로 완성되어 있습니다.<br><br>
+      <b>실시간 시세 자동 조회가 안 되는 이유:</b> 무료 주식 API 대부분이 브라우저에서 직접 호출하는 것을 보안상 차단합니다(CORS 정책).
+      이걸 뚫으려면 별도의 서버(백엔드)가 필요한데, 이는 "파일 하나로 끝"이라는 지금 목표와는 다른 작업입니다.
+      지금은 시세를 직접 입력하는 방식으로, 나중에 필요하시면 자동 조회 버전도 만들어 드릴 수 있습니다.
+    </p>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================================
+   전역 상태(State)
+   - 새로고침하면 초기화됩니다 (브라우저 저장소를 쓰지 않는 대신,
+     "파일로 저장" 버튼으로 JSON 파일을 다운로드해 보관하는 방식 사용)
+===================================================================== */
+let holdings = [];      // [{ id, symbol, name, targetWeight, shares, avgPrice, curPrice, history: [] }]
+let donutChartInstance = null;
+let backtestChartInstance = null;
+let idSeq = 1;
+
+/* =====================================================================
+   1. 종목 추가/삭제
+===================================================================== */
+function addHolding(){
+  const symbol = document.getElementById('fSymbol').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const weight = parseFloat(document.getElementById('fWeight').value);
+  const shares = parseFloat(document.getElementById('fShares').value) || 0;
+  const avgPrice = parseFloat(document.getElementById('fAvgPrice').value) || 0;
+  const curPrice = parseFloat(document.getElementById('fCurPrice').value) || 0;
+
+  if(!symbol || isNaN(weight)){
+    alert('티커/심볼과 목표비중은 반드시 입력해 주세요.');
+    return;
+  }
+
+  holdings.push({
+    id: idSeq++,
+    symbol, name, targetWeight: weight, shares, avgPrice, curPrice,
+    history: [] // 과거 종가 배열 (백테스팅/위험도 분석용)
+  });
+
+  // 입력폼 초기화
+  ['fSymbol','fName','fWeight','fShares','fAvgPrice','fCurPrice'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+
+  renderAll();
+}
+
+function removeHolding(id){
+  holdings = holdings.filter(h => h.id !== id);
+  renderAll();
+}
+
+/* =====================================================================
+   2. 계산 로직 (설계 문서의 공식을 그대로 코드화)
+===================================================================== */
+function getTotalInvestment(){
+  return parseFloat(document.getElementById('inputTotalInvestment').value) || 0;
+}
+
+// 종목별 배분금액 = 총투자금액 × (목표비중/100)
+function allocatedAmount(h){
+  return getTotalInvestment() * (h.targetWeight / 100);
+}
+
+// 종목별 평가금액 = 보유수량 × 현재가
+function currentValue(h){
+  return h.shares * h.curPrice;
+}
+
+function totalCurrentValue(){
+  return holdings.reduce((sum,h)=> sum + currentValue(h), 0);
+}
+
+function totalTargetWeight(){
+  return holdings.reduce((sum,h)=> sum + h.targetWeight, 0);
+}
+
+// 손익률 = (현재가 - 평균매입가) / 평균매입가 × 100
+function pnlPercent(h){
+  if(!h.avgPrice) return null;
+  return ((h.curPrice - h.avgPrice) / h.avgPrice) * 100;
+}
+
+/* 리밸런싱 계산
+   목표금액 = 현재 총평가금액 × 목표비중
+   차이금액 = 목표금액 - 현재금액
+   매매수량 = 차이금액 / 현재가  (양수: 매수 / 음수: 매도) */
+function calcRebalance(h, totalVal){
+  const targetAmount = totalVal * (h.targetWeight / 100);
+  const curAmount = currentValue(h);
+  const diffAmount = targetAmount - curAmount;
+  const diffShares = h.curPrice ? diffAmount / h.curPrice : 0;
+  return { diffAmount, diffShares };
+}
+
+/* =====================================================================
+   3. 렌더링
+===================================================================== */
+function renderAll(){
+  renderStats();
+  renderTable();
+  renderDonut();
+  renderRebalanceList();
+  renderHistoryInputs();
+}
+
+function fmtWon(n){
+  return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+function fmtPct(n){
+  return (n>=0?'+':'') + n.toFixed(2) + '%';
+}
+
+function renderStats(){
+  const totalInv = getTotalInvestment();
+  const totalCur = totalCurrentValue();
+  const pnl = totalCur - holdings.reduce((s,h)=> s + h.shares*h.avgPrice, 0);
+  const wSum = totalTargetWeight();
+
+  document.getElementById('statTotalInvestment').textContent = fmtWon(totalInv);
+  document.getElementById('statCurrentValue').textContent = holdings.length ? fmtWon(totalCur) : '-';
+
+  const pnlEl = document.getElementById('statPnL');
+  pnlEl.textContent = holdings.length ? fmtWon(pnl) : '-';
+  pnlEl.className = 'stat-value ' + (pnl>=0 ? 'pos' : 'neg');
+
+  const wEl = document.getElementById('statWeightSum');
+  wEl.textContent = wSum.toFixed(1) + '%';
+  wEl.className = 'stat-value ' + (Math.abs(wSum-100)<0.01 ? 'pos' : '');
+
+  const msg = document.getElementById('weightMsg');
+  if(holdings.length===0){ msg.innerHTML=''; }
+  else if(Math.abs(wSum-100) < 0.01){
+    msg.innerHTML = '<div class="weight-ok">✓ 목표비중 합계가 100%입니다.</div>';
+  } else {
+    msg.innerHTML = `<div class="weight-warn">⚠ 목표비중 합계가 ${wSum.toFixed(1)}%입니다. 100%가 되도록 조정해 보세요 (부족분은 현금으로 볼 수도 있습니다).</div>`;
+  }
+}
+
+function renderTable(){
+  const body = document.getElementById('holdingsBody');
+  const empty = document.getElementById('emptyMsg');
+  body.innerHTML = '';
+
+  if(holdings.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const totalVal = totalCurrentValue();
+
+  holdings.forEach(h=>{
+    const alloc = allocatedAmount(h);
+    const curVal = currentValue(h);
+    const curWeight = totalVal ? (curVal/totalVal*100) : 0;
+    const pnl = pnlPercent(h);
+    const reb = calcRebalance(h, totalVal);
+
+    let tag = 'tag-hold', tagText = '유지';
+    if(Math.abs(reb.diffShares) > 0.0001){
+      if(reb.diffShares > 0){ tag='tag-buy'; tagText = `매수 ${Math.abs(reb.diffShares).toFixed(2)}주`; }
+      else { tag='tag-sell'; tagText = `매도 ${Math.abs(reb.diffShares).toFixed(2)}주`; }
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="name-cell">
+        <div class="sym">${h.symbol}</div>
+        <div class="full">${h.name || ''}</div>
+        <button class="toggle-history" onclick="toggleHistory(${h.id})">과거 가격 입력</button>
+      </td>
+      <td>${h.targetWeight.toFixed(1)}%</td>
+      <td>${fmtWon(alloc)}</td>
+      <td>${h.shares}</td>
+      <td>${fmtWon(curVal)}</td>
+      <td>${curWeight.toFixed(1)}%</td>
+      <td class="${pnl===null?'':(pnl>=0?'pos':'neg')}">${pnl===null?'-':fmtPct(pnl)}</td>
+      <td><span class="tag ${tag}">${tagText}</span></td>
+      <td><button class="btn-danger btn-sm" onclick="removeHolding(${h.id})">삭제</button></td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderDonut(){
+  const ctx = document.getElementById('donutChart');
+  if(donutChartInstance){ donutChartInstance.destroy(); }
+  if(holdings.length===0){
+    document.getElementById('donutCenter').innerHTML = '<div class="amt">-</div><div class="lbl">종목을 추가해 주세요</div>';
+    return;
+  }
+
+  const colors = ['#6C7BFF','#34D399','#F2B84B','#F87171','#38BDF8','#A78BFA','#FB923C','#4ADE80'];
+  donutChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data:{
+      labels: holdings.map(h=>h.symbol),
+      datasets:[{
+        data: holdings.map(h=>h.targetWeight),
+        backgroundColor: holdings.map((_,i)=>colors[i%colors.length]),
+        borderColor: '#131B2E',
+        borderWidth: 3,
+      }]
+    },
+    options:{
+      cutout:'68%',
+      plugins:{
+        legend:{ position:'bottom', labels:{ color:'#E7ECF7', font:{size:11} } },
+        tooltip:{ callbacks:{ label: (c)=> `${c.label}: ${c.parsed}%` } }
+      }
+    }
+  });
+
+  document.getElementById('donutCenter').innerHTML =
+    `<div class="amt">${fmtWon(getTotalInvestment())}</div><div class="lbl">총 투자금액</div>`;
+}
+
+function renderRebalanceList(){
+  const el = document.getElementById('rebalanceList');
+  if(holdings.length===0){ el.innerHTML = '<div class="empty">종목을 추가하면 리밸런싱 계산 결과가 표시됩니다.</div>'; return; }
+
+  const totalVal = totalCurrentValue();
+  let html = '';
+  holdings.forEach(h=>{
+    const reb = calcRebalance(h, totalVal);
+    if(Math.abs(reb.diffShares) < 0.0001){
+      html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
+        <b>${h.symbol}</b> — <span style="color:var(--text-dim);">비중 유지 (매매 불필요)</span>
+      </div>`;
+    } else {
+      const action = reb.diffShares > 0 ? '매수' : '매도';
+      const color = reb.diffShares > 0 ? 'pos' : 'neg';
+      html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
+        <b>${h.symbol}</b> — <span class="${color}">${action} ${Math.abs(reb.diffShares).toFixed(2)}주</span>
+        <span style="color:var(--text-dim);"> (약 ${fmtWon(Math.abs(reb.diffAmount))})</span>
+      </div>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+/* =====================================================================
+   4. 과거 가격 입력 UI (종목별 접기/펼치기)
+===================================================================== */
+function renderHistoryInputs(){
+  const wrap = document.getElementById('historyInputs');
+  wrap.innerHTML = '';
+  holdings.forEach(h=>{
+    const box = document.createElement('div');
+    box.className = 'history-box';
+    box.id = `history-${h.id}`;
+    box.innerHTML = `
+      <small><b>${h.symbol}</b> 과거 종가 — 한 줄에 하나씩, 오래된 날짜 → 최근 날짜 순으로 붙여넣으세요.</small>
+      <textarea rows="6" id="historyInput-${h.id}" placeholder="185.32&#10;186.10&#10;184.90&#10;...">${h.history.join('\n')}</textarea>
+    `;
+    wrap.appendChild(box);
+  });
+}
+
+function toggleHistory(id){
+  const box = document.getElementById(`history-${id}`);
+  if(box) box.classList.toggle('open');
+}
+
+/* =====================================================================
+   5. 위험도 분석 & 백테스팅 계산
+===================================================================== */
+// 일별 수익률 배열 계산: r_t = (P_t - P_(t-1)) / P_(t-1)
+function dailyReturns(prices){
+  const rets = [];
+  for(let i=1;i<prices.length;i++){
+    rets.push((prices[i]-prices[i-1]) / prices[i-1]);
+  }
+  return rets;
+}
+
+function stdev(arr){
+  const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+  const variance = arr.reduce((a,b)=> a + Math.pow(b-mean,2), 0) / (arr.length - 1);
+  return Math.sqrt(variance);
+}
+
+// 연율화 변동성(%) = 일별수익률 표준편차 × √252 × 100
+function annualizedVolatility(prices){
+  if(prices.length < 2) return null;
+  return stdev(dailyReturns(prices)) * Math.sqrt(252) * 100;
+}
+
+// 베타 = Cov(종목수익률, 시장수익률) / Var(시장수익률)
+function calcBeta(stockPrices, marketPrices){
+  if(stockPrices.length !== marketPrices.length || stockPrices.length < 2) return null;
+  const rS = dailyReturns(stockPrices);
+  const rM = dailyReturns(marketPrices);
+  const meanS = rS.reduce((a,b)=>a+b,0)/rS.length;
+  const meanM = rM.reduce((a,b)=>a+b,0)/rM.length;
+  let cov = 0, varM = 0;
+  for(let i=0;i<rS.length;i++){
+    cov += (rS[i]-meanS) * (rM[i]-meanM);
+    varM += Math.pow(rM[i]-meanM, 2);
+  }
+  cov /= (rS.length-1);
+  varM /= (rM.length-1);
+  return varM ? cov/varM : null;
+}
+
+// MDD(%) = 시계열의 최고점 대비 최대 낙폭
+function calcMDD(values){
+  let peak = values[0];
+  let mdd = 0;
+  values.forEach(v=>{
+    if(v>peak) peak = v;
+    const dd = (v-peak)/peak;
+    if(dd<mdd) mdd = dd;
+  });
+  return mdd * 100;
+}
+
+function runRiskAnalysis(){
+  // 1) 각 종목의 textarea에서 과거 종가 읽어오기
+  const tracked = [];
+  holdings.forEach(h=>{
+    const raw = document.getElementById(`historyInput-${h.id}`)?.value || '';
+    const prices = raw.split('\n').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+    h.history = prices;
+    if(prices.length >= 2) tracked.push(h);
+  });
+
+  if(tracked.length === 0){
+    alert('과거 가격이 입력된 종목이 없습니다. 최소 한 종목 이상 입력해 주세요.');
+    return;
+  }
+
+  const lengths = tracked.map(h=>h.history.length);
+  const minLen = Math.min(...lengths);
+  const maxLen = Math.max(...lengths);
+  if(minLen !== maxLen){
+    alert(`종목별 입력된 가격 개수가 다릅니다 (${minLen}~${maxLen}개). 정확한 계산을 위해 모든 종목의 줄 수를 동일하게 맞춰 주세요.`);
+    return;
+  }
+
+  document.getElementById('riskEmptyMsg').style.display = 'none';
+
+  // 2) 정규화 지수 계산: Index_i(t) = P_i(t)/P_i(0) * 100
+  //    비중은 "가격 데이터가 있는 종목들" 사이에서 다시 100%로 정규화해서 사용
+  const weightSum = tracked.reduce((s,h)=> s + h.targetWeight, 0);
+  const n = minLen;
+  const portfolioIndex = new Array(n).fill(0);
+
+  tracked.forEach(h=>{
+    const base = h.history[0];
+    const normWeight = h.targetWeight / weightSum;
+    for(let t=0;t<n;t++){
+      portfolioIndex[t] += (h.history[t] / base * 100) * normWeight;
+    }
+  });
+
+  // 3) 누적수익률, MDD, 변동성 계산
+  const cumReturn = (portfolioIndex[n-1] - 100);
+  const mdd = calcMDD(portfolioIndex);
+  const years = parseFloat(document.getElementById('backtestYears').value) || 1;
+  const cagr = (Math.pow(portfolioIndex[n-1]/100, 1/years) - 1) * 100;
+
+  // 포트폴리오 변동성: 정규화 지수 시계열 자체의 일별 수익률로 계산
+  const portVol = annualizedVolatility(portfolioIndex);
+
+  document.getElementById('statVolatility').textContent = portVol ? portVol.toFixed(1)+'%' : '-';
+  const mddEl = document.getElementById('statMDD');
+  mddEl.textContent = mdd.toFixed(1)+'%'; mddEl.className = 'stat-value neg';
+  const cumEl = document.getElementById('statCumReturn');
+  cumEl.textContent = fmtPct(cumReturn); cumEl.className = 'stat-value ' + (cumReturn>=0?'pos':'neg');
+  const cagrEl = document.getElementById('statCAGR');
+  cagrEl.textContent = fmtPct(cagr); cagrEl.className = 'stat-value ' + (cagr>=0?'pos':'neg');
+
+  // 4) 베타 계산 (비교지수가 입력된 경우)
+  const benchRaw = document.getElementById('benchmarkHistory').value;
+  const benchPrices = benchRaw.split('\n').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x));
+  if(benchPrices.length === n){
+    const beta = calcBeta(portfolioIndex, benchPrices);
+    if(beta !== null){
+      document.getElementById('statVolatility').textContent += ` (β ${beta.toFixed(2)})`;
+    }
+  }
+
+  // 5) 백테스팅 라인 차트 렌더링
+  const ctx = document.getElementById('backtestChart');
+  if(backtestChartInstance){ backtestChartInstance.destroy(); }
+  backtestChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: portfolioIndex.map((_,i)=> i===0? '시작' : (i===n-1? '현재':`${i}일`)),
+      datasets:[{
+        label:'포트폴리오 누적 지수 (시작=100)',
+        data: portfolioIndex,
+        borderColor:'#6C7BFF',
+        backgroundColor:'rgba(108,123,255,0.12)',
+        fill:true, tension:0.25, pointRadius:0, borderWidth:2,
+      }]
+    },
+    options:{
+      plugins:{ legend:{ labels:{ color:'#E7ECF7' } } },
+      scales:{
+        x:{ ticks:{ color:'#8B96B3', maxTicksLimit:8 }, grid:{ color:'#2A3550' } },
+        y:{ ticks:{ color:'#8B96B3' }, grid:{ color:'#2A3550' } }
+      }
+    }
+  });
+}
+
+/* =====================================================================
+   6. 저장 / 불러오기 (localStorage 대신 JSON 파일 다운로드 방식 사용)
+===================================================================== */
+function exportData(){
+  const data = {
+    totalInvestment: getTotalInvestment(),
+    holdings: holdings
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `portfolio-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      document.getElementById('inputTotalInvestment').value = data.totalInvestment || 10000000;
+      holdings = data.holdings || [];
+      idSeq = Math.max(1, ...holdings.map(h=>h.id||0)) + 1;
+      renderAll();
+    }catch(err){
+      alert('파일을 읽는 데 실패했습니다. 올바른 저장 파일인지 확인해 주세요.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* 투자금액 입력이 바뀔 때마다 화면 갱신 */
+document.getElementById('inputTotalInvestment').addEventListener('input', renderAll);
+
+/* 초기 렌더링 */
+renderAll();
+</script>
+</body>
+</html>
