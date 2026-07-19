@@ -151,6 +151,8 @@
   .chips{ display:flex; gap:7px; flex-wrap:wrap; margin:10px 0; }
   .chip{ display:inline-flex; gap:6px; align-items:center; background:rgba(108,123,255,.14); color:var(--text); border:1px solid rgba(108,123,255,.35); border-radius:100px; padding:5px 9px; font-size:12px; }
   .chip button{ padding:0; background:none; color:var(--text-dim); }
+  .compare-entry{ display:grid; grid-template-columns:minmax(180px,1fr) auto; gap:8px; margin-top:10px; }
+  @media(max-width:600px){ .compare-entry{ grid-template-columns:1fr; } }
   .scroll-table{ overflow-x:auto; }
   .matrix td,.matrix th{ text-align:center; min-width:74px; }
   .matrix td.high-corr{ color:var(--accent-rose); background:rgba(248,113,113,.08); }
@@ -169,6 +171,9 @@
   .data-request{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:13px; border:1px solid rgba(242,184,75,.4); background:rgba(242,184,75,.07); border-radius:10px; margin-top:12px; }
   .workspace-box{ display:grid; grid-template-columns:minmax(180px,1fr) auto; gap:8px; max-width:620px; padding:14px; border:1px solid var(--border); background:var(--surface-2); border-radius:10px; margin-bottom:14px; }
   @media(max-width:620px){ .workspace-box{ grid-template-columns:1fr; } }
+  .cloud-user{ display:flex; align-items:center; gap:10px; min-height:42px; }
+  .cloud-avatar{ display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:rgba(108,123,255,.18); color:var(--accent-indigo); font-weight:800; }
+  .cloud-user small{ display:block; color:var(--text-dim); margin-top:2px; }
   .freshness{ color:var(--accent-mint); font-size:11px; }
   .hidden{ display:none !important; }
 
@@ -228,6 +233,7 @@
     </div>
     <div id="researchLoading" class="analysis-status"></div>
     <div id="researchMetrics" class="metric-grid"></div>
+    <div class="note">지표 기준: PER은 저장일 가격 ÷ 최근 4개 분기 실제 EPS 합계, PBR은 저장일 시가총액 ÷ 최신 연차 자본, ROE는 Nasdaq 최신 연차 After Tax ROE입니다. 서비스마다 가격 시점·분기/연차·기본/희석 또는 조정 EPS 기준이 달라 값이 조금씩 다를 수 있습니다.</div>
     <p id="researchDescription" class="description"></p>
     <div class="mini-grid" style="margin-top:14px;">
       <div class="subpanel"><h3>기간별 주가</h3><div id="researchPeriods" class="note" style="margin:0;">데이터 없음</div></div>
@@ -438,9 +444,14 @@
     </div>
     <div class="subpanel" style="margin-top:16px;">
       <h3>종목 비교</h3>
+      <p class="note">포트폴리오와 별개인 비교 전용 목록입니다. 티커를 하나씩 입력하거나 쉼표로 여러 개를 한 번에 추가하세요.</p>
+      <div class="compare-entry">
+        <input type="text" id="compareSymbolInput" autocomplete="off" placeholder="예: QQQ, SPY, SCHD">
+        <button type="button" class="btn-ghost btn-sm" onclick="addCompareFromInput()">비교 목록에 추가</button>
+      </div>
       <div id="compareChips" class="chips"></div>
       <div class="footer-actions"><button type="button" class="btn-ghost btn-sm" onclick="addPortfolioToCompare()">포트폴리오 종목 추가</button><button type="button" class="btn-primary btn-sm" id="compareRunBtn" onclick="runComparison()">비교 실행</button></div>
-      <div id="comparisonResult" class="empty">검색 결과나 포트폴리오에서 최대 4개 종목을 추가하세요.</div>
+      <div id="comparisonResult" class="empty">위 입력칸, 검색 결과 또는 포트폴리오에서 최대 4개 종목을 추가하세요.</div>
     </div>
   </div>
 
@@ -489,12 +500,18 @@
 
   <!-- ===================== 저장/불러오기 ===================== -->
   <div class="card">
-    <h2><span class="idx">09</span> 개인 보관함 · 저장</h2>
-    <p class="card-desc">보관함 키마다 포트폴리오와 메모가 분리되어 이 브라우저에 자동 저장됩니다.</p>
+    <h2><span class="idx">09</span> Google 로그인 · 클라우드 저장</h2>
+    <p class="card-desc">Google 계정으로 로그인하면 포트폴리오와 투자 일지가 사용자별로 분리되어 다른 기기에서도 자동으로 열립니다.</p>
     <div class="workspace-box">
-      <div><label for="workspaceKey">개인 보관함 키</label><input type="password" id="workspaceKey" autocomplete="off" placeholder="본인만 기억할 키를 입력"></div>
-      <button type="button" class="btn-primary" onclick="activateWorkspace()" style="align-self:end;">보관함 열기</button>
-      <div id="workspaceStatus" class="note" style="grid-column:1/-1;margin:0;">현재: 기본 보관함 · 이 기기와 브라우저 안에서만 작동합니다.</div>
+      <div class="cloud-user">
+        <div id="cloudAvatar" class="cloud-avatar">G</div>
+        <div><b id="cloudUserName">로그인하지 않음</b><small id="cloudUserEmail">현재는 이 브라우저에만 저장됩니다.</small></div>
+      </div>
+      <div class="footer-actions" style="margin:0;align-self:center;">
+        <button type="button" class="btn-primary" id="googleSignInBtn" onclick="signInWithGoogle()" disabled>Google로 로그인</button>
+        <button type="button" class="btn-ghost" id="googleSignOutBtn" onclick="signOutGoogle()" hidden>로그아웃</button>
+      </div>
+      <div id="cloudSyncStatus" class="note" style="grid-column:1/-1;margin:0;">Firebase 연결 설정을 확인하는 중입니다…</div>
     </div>
     <div class="footer-actions">
       <button type="button" class="btn-ghost" onclick="exportData()">💾 JSON 백업</button>
@@ -509,7 +526,7 @@
       <b>사용법:</b> 이 파일(my-portfolio.html)은 인터넷 브라우저(크롬/엣지 등)로 더블클릭해서 여는 것만으로 바로 작동합니다.
       VS Code는 파일을 보관/편집하는 용도일 뿐, 이 웹사이트 자체는 npm 설치나 서버 실행 없이 이 파일 하나로 완성되어 있습니다.<br><br>
       <b>무료 시세 안내:</b> GitHub Actions가 공개 시장 페이지의 지연 데이터를 하루 한 번 저장하고 사이트는 그 파일만 읽습니다. 공급처 구조 변경이나 일시 차단 시 기존 캐시를 유지하며,
-      일부 지표가 비어 있으면 ‘정보 없음’으로 표시합니다. 보관함 키는 서버 로그인이나 암호화 계정이 아니므로 다른 기기에서는 JSON 백업이 필요합니다. 계산 결과는 투자 판단을 위한 참고 자료이며 수익을 보장하지 않습니다.
+      일부 지표가 비어 있으면 ‘정보 없음’으로 표시합니다. Google 로그인 데이터는 Firebase 보안 규칙으로 사용자별 분리되며, 중요한 기록은 JSON 백업도 함께 보관하는 것을 권장합니다. 계산 결과는 투자 판단을 위한 참고 자료이며 수익을 보장하지 않습니다.
     </p>
   </div>
 
@@ -517,6 +534,7 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+<script src="firebase-config.js"></script>
 <script>
 /* =====================================================================
    전역 상태(State)
@@ -528,6 +546,7 @@ const ACTIVE_WORKSPACE_KEY = 'myQuantPlatform.activeWorkspace.v1';
 const DATA_VERSION = 5;
 const CACHE_SCHEMA_VERSION = 2;
 const REPOSITORY_URL = 'https://github.com/darkdarkbin/MyQuantPlatform';
+const FIREBASE_SDK_VERSION = '12.16.0';
 let holdings = [];
 let benchmarkDates = [];
 let lastBacktestSeries = [];
@@ -545,6 +564,13 @@ let marketCatalog = null;
 let marketCatalogPromise = null;
 let marketManifest = null;
 const snapshotMemory = new Map();
+let firebaseServices = null;
+let cloudUser = null;
+let cloudSyncReady = false;
+let cloudSaveTimer = null;
+let cloudSaveInFlight = null;
+let cloudAuthResolved = false;
+let cloudAuthGeneration = 0;
 
 function finiteNumber(value, fallback=0){
   const n = Number(value);
@@ -742,7 +768,7 @@ function dataRequestUrl(symbol){
 function renderDataRequest(symbol,targetId='researchRequest'){
   const target=document.getElementById(targetId);
   if(!target) return;
-  target.innerHTML=`<div class="data-request"><span><b>${escapeHtml(symbol)}</b>은 아직 무료 캐시에 없습니다. 최초 한 번만 생성하면 이후 제한 없이 조회됩니다.</span><a class="btn-primary btn-sm" style="text-decoration:none;" href="${escapeHtml(dataRequestUrl(symbol))}" target="_blank" rel="noopener noreferrer">무료 데이터 생성 요청</a><button type="button" class="btn-ghost btn-sm" onclick="retryResearch('${escapeHtml(symbol)}')">생성 후 다시 확인</button></div>`;
+  target.innerHTML=`<div class="data-request"><span><b>${escapeHtml(symbol)}</b>은 아직 무료 캐시에 없습니다. <b>1. 무료 데이터 생성 요청</b>을 누른 뒤 GitHub 화면에서 제목을 바꾸지 말고 <b>Submit new issue(새 이슈 제출)</b>만 누르세요. 완료까지 보통 1~3분 걸립니다.</span><a class="btn-primary btn-sm" style="text-decoration:none;" href="${escapeHtml(dataRequestUrl(symbol))}" target="_blank" rel="noopener noreferrer">1. 무료 데이터 생성 요청</a><button type="button" class="btn-ghost btn-sm" onclick="retryResearch('${escapeHtml(symbol)}')">2. 생성 후 다시 확인</button></div>`;
 }
 
 async function searchSymbols(){
@@ -1714,10 +1740,20 @@ function renderCompareChips(){
 
 function addSymbolToCompare(symbol){
   let normalized;
-  try{ normalized=normalizedMarketSymbol(symbol); }catch(error){ showToast('지원하지 않는 티커 형식입니다.'); return; }
-  if(!normalized || comparisonSymbols.includes(normalized)) return;
-  if(comparisonSymbols.length>=4){ showToast('비교는 최대 4개 종목까지 가능합니다.'); return; }
+  try{ normalized=normalizedMarketSymbol(symbol); }catch(error){ showToast('지원하지 않는 티커 형식입니다.'); return false; }
+  if(!normalized || comparisonSymbols.includes(normalized)) return false;
+  if(comparisonSymbols.length>=4){ showToast('비교는 최대 4개 종목까지 가능합니다.'); return false; }
   comparisonSymbols.push(normalized); renderCompareChips(); persistState();
+  return true;
+}
+
+function addCompareFromInput(){
+  const input=document.getElementById('compareSymbolInput');
+  const symbols=String(input.value || '').split(/[\s,]+/).map(value=>value.trim()).filter(Boolean);
+  if(!symbols.length){ showToast('비교할 티커를 입력해 주세요.'); return; }
+  let added=0;
+  symbols.forEach(symbol=>{ if(addSymbolToCompare(symbol)) added++; });
+  if(added){ input.value=''; showToast(`${added}개 티커를 비교 목록에 추가했습니다.`); }
 }
 
 function addResearchToCompare(){ if(currentResearch) addSymbolToCompare(currentResearch.symbol); }
@@ -1741,7 +1777,11 @@ async function runComparison(){
     const range=getRequestedDateRange();
     const {series,errors}=await fetchAutomaticSeries(comparisonSymbols,range);
     const missing=comparisonSymbols.filter(symbol=>!series.has(symbol));
-    if(missing.length) throw new Error(`비교 데이터 부족: ${missing.join(', ')}${errors.length?' · '+errors.join(' / '):''}`);
+    if(missing.length){
+      resultEl.className='';
+      resultEl.innerHTML=`<div class="error-box">비교 데이터 생성이 필요한 티커: ${escapeHtml(missing.join(', '))}${errors.length?`<br>${escapeHtml(errors.join(' / '))}`:''}</div><div class="footer-actions">${missing.map(symbol=>`<a class="btn-primary btn-sm" style="text-decoration:none;" href="${escapeHtml(dataRequestUrl(symbol))}" target="_blank" rel="noopener noreferrer">${escapeHtml(symbol)} 무료 데이터 생성</a>`).join('')}</div>`;
+      return;
+    }
     const named=comparisonSymbols.map(symbol=>series.get(symbol));
     const aligned=alignNamedSeries(named);
     const elapsed=Math.max((Date.parse(aligned.dates.at(-1))-Date.parse(aligned.dates[0]))/86400000/365.25,1/252);
@@ -2028,28 +2068,201 @@ function hydrateData(data){
 
 function workspaceStorageKey(id=activeWorkspaceId){ return `${STORAGE_KEY}.workspace.${id}`; }
 
-function updateWorkspaceStatus(){
-  const el=document.getElementById('workspaceStatus');
-  if(el) el.textContent=`현재: ${activeWorkspaceLabel} · 이 기기와 브라우저 안에서만 자동 저장됩니다.`;
+function emptyPortfolioData(){
+  return {holdings:[],portfolioMode:'PLAN',totalInvestment:10000000,usdKrw:1380,backtestYears:3,riskFreeRate:3,benchmarkSymbol:'SPY'};
 }
 
-async function activateWorkspace(){
-  const input=document.getElementById('workspaceKey');
-  const key=input.value.trim();
-  if(key.length<4){ showToast('보관함 키는 4자 이상 입력해 주세요.'); return; }
+function collectCloudData(){
+  const data=JSON.parse(JSON.stringify(collectData()));
+  data.xrayCache={};
+  data.holdings=(data.holdings || []).map(item=>{
+    const automatic=Array.isArray(item.historyDates) && item.historyDates.length>0 && item.historyDates.length===(item.history || []).length;
+    return automatic?{...item,history:[],historyDates:[]}:item;
+  });
+  if(Array.isArray(data.benchmarkDates) && data.benchmarkDates.length>0 && data.benchmarkDates.length===(data.benchmarkHistory || []).length){
+    data.benchmarkDates=[]; data.benchmarkHistory=[];
+  }
+  return data;
+}
+
+function hasMeaningfulPortfolio(data){
+  if(!data || !Array.isArray(data.holdings)) return false;
+  if(data.holdings.length || (data.comparisonSymbols || []).length) return true;
+  return finiteNumber(data.totalInvestment,10000000)!==10000000;
+}
+
+function firebaseConfigured(){
+  const config=window.MQP_FIREBASE_CONFIG;
+  return !!(config && ['apiKey','authDomain','projectId','appId'].every(key=>String(config[key] || '').trim()));
+}
+
+function setCloudStatus(message,type=''){
+  const el=document.getElementById('cloudSyncStatus');
+  if(!el) return;
+  el.textContent=message;
+  el.className=`note ${type}`.trim();
+}
+
+function updateCloudAuthUi(){
+  const signIn=document.getElementById('googleSignInBtn');
+  const signOut=document.getElementById('googleSignOutBtn');
+  const name=document.getElementById('cloudUserName');
+  const email=document.getElementById('cloudUserEmail');
+  const avatar=document.getElementById('cloudAvatar');
+  if(!signIn || !signOut) return;
+  signIn.hidden=!!cloudUser;
+  signIn.disabled=!firebaseServices || !!cloudUser;
+  signOut.hidden=!cloudUser;
+  name.textContent=cloudUser?.displayName || (cloudUser?'Google 사용자':'로그인하지 않음');
+  email.textContent=cloudUser?.email || '현재는 이 브라우저에만 저장됩니다.';
+  avatar.textContent=(cloudUser?.displayName || cloudUser?.email || 'G').trim().charAt(0).toUpperCase() || 'G';
+}
+
+function friendlyFirebaseError(error){
+  const code=String(error?.code || '');
+  if(code.includes('unauthorized-domain')) return 'Firebase 승인 도메인에 darkdarkbin.github.io를 추가해 주세요.';
+  if(code.includes('popup-closed')) return 'Google 로그인 창이 닫혔습니다.';
+  if(code.includes('permission-denied')) return 'Firestore 보안 규칙을 확인해 주세요.';
+  if(code.includes('network')) return 'Firebase 연결에 실패했습니다. 인터넷 연결을 확인해 주세요.';
+  return String(error?.message || 'Google 로그인 또는 클라우드 저장 중 오류가 발생했습니다.').slice(0,220);
+}
+
+async function initializeCloudAuth(){
+  if(!firebaseConfigured()){
+    setCloudStatus('Google 로그인을 사용하려면 firebase-config.js 연결이 필요합니다. FIREBASE-SETUP.md를 따라 최초 한 번만 설정해 주세요.');
+    updateCloudAuthUi();
+    return;
+  }
+  setCloudStatus('Google 로그인 모듈을 불러오는 중입니다…','loading');
   try{
-    persistState();
-    const bytes=new TextEncoder().encode(`MyQuantPlatform:${key}`);
-    const digest=await crypto.subtle.digest('SHA-256',bytes);
-    activeWorkspaceId=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('').slice(0,24);
-    activeWorkspaceLabel=`개인 보관함 ${activeWorkspaceId.slice(0,6)}`;
-    localStorage.setItem(ACTIVE_WORKSPACE_KEY,JSON.stringify({id:activeWorkspaceId,label:activeWorkspaceLabel}));
-    const saved=localStorage.getItem(workspaceStorageKey());
-    if(saved) hydrateData(JSON.parse(saved));
-    else hydrateData({holdings:[],portfolioMode:'PLAN',totalInvestment:10000000,usdKrw:1380,backtestYears:3,riskFreeRate:3,benchmarkSymbol:'SPY'});
-    input.value=''; lastBacktestSeries=[]; lastRiskDates=[]; renderAll(); updateWorkspaceStatus();
-    showToast(saved?'기존 개인 보관함을 열었습니다.':'새 개인 보관함을 만들었습니다.');
-  }catch(error){ showToast('보관함을 열지 못했습니다. 브라우저 저장 기능을 확인해 주세요.'); }
+    const base=`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}`;
+    const [appApi,authApi,firestoreApi]=await Promise.all([
+      import(`${base}/firebase-app.js`),
+      import(`${base}/firebase-auth.js`),
+      import(`${base}/firebase-firestore.js`)
+    ]);
+    const app=appApi.initializeApp(window.MQP_FIREBASE_CONFIG);
+    const auth=authApi.getAuth(app);
+    await authApi.setPersistence(auth,authApi.browserLocalPersistence);
+    const provider=new authApi.GoogleAuthProvider();
+    const db=firestoreApi.getFirestore(app);
+    firebaseServices={auth,provider,db,authApi,firestoreApi};
+    updateCloudAuthUi();
+    authApi.onAuthStateChanged(auth,user=>handleCloudAuthState(user));
+    setCloudStatus('Google 로그인 준비 완료 · 로그인 전에는 이 브라우저에만 저장됩니다.','success');
+  }catch(error){
+    firebaseServices=null; updateCloudAuthUi();
+    setCloudStatus(friendlyFirebaseError(error),'error');
+  }
+}
+
+async function signInWithGoogle(){
+  if(!firebaseServices){ showToast('Firebase 연결 설정이 아직 완료되지 않았습니다.'); return; }
+  const button=document.getElementById('googleSignInBtn');
+  button.disabled=true; setCloudStatus('Google 로그인 창을 여는 중입니다…','loading');
+  try{
+    await firebaseServices.authApi.signInWithPopup(firebaseServices.auth,firebaseServices.provider);
+  }catch(error){
+    if(String(error?.code || '').includes('popup-blocked')){
+      await firebaseServices.authApi.signInWithRedirect(firebaseServices.auth,firebaseServices.provider);
+      return;
+    }
+    setCloudStatus(friendlyFirebaseError(error),'error'); showToast(friendlyFirebaseError(error));
+  }finally{ if(!cloudUser) button.disabled=false; }
+}
+
+async function signOutGoogle(){
+  if(!firebaseServices || !cloudUser) return;
+  try{
+    await saveCloudWorkspaceNow();
+    await firebaseServices.authApi.signOut(firebaseServices.auth);
+    showToast('Google 계정에서 로그아웃했습니다.');
+  }catch(error){ setCloudStatus(friendlyFirebaseError(error),'error'); }
+}
+
+function switchToDefaultLocalWorkspace(){
+  cloudSyncReady=false;
+  cloudUser=null;
+  activeWorkspaceId='default'; activeWorkspaceLabel='기본 로컬 보관함';
+  localStorage.removeItem(ACTIVE_WORKSPACE_KEY);
+  const saved=localStorage.getItem(workspaceStorageKey());
+  hydrateData(saved?JSON.parse(saved):emptyPortfolioData());
+  lastBacktestSeries=[]; lastRiskDates=[];
+  renderAll(); updateCloudAuthUi();
+  setCloudStatus('로그아웃됨 · 현재 내용은 이 브라우저에만 저장됩니다.');
+}
+
+async function handleCloudAuthState(user){
+  const generation=++cloudAuthGeneration;
+  cloudAuthResolved=true;
+  clearTimeout(cloudSaveTimer); cloudSaveTimer=null; cloudSyncReady=false;
+  if(!user){
+    if(activeWorkspaceId.startsWith('cloud-')) switchToDefaultLocalWorkspace();
+    else{ cloudUser=null; updateCloudAuthUi(); }
+    return;
+  }
+
+  const localCandidate=collectCloudData();
+  cloudUser=user;
+  activeWorkspaceId=`cloud-${user.uid}`;
+  activeWorkspaceLabel=user.displayName || user.email || 'Google 클라우드 보관함';
+  localStorage.setItem(ACTIVE_WORKSPACE_KEY,JSON.stringify({id:activeWorkspaceId,label:activeWorkspaceLabel}));
+  updateCloudAuthUi(); setCloudStatus('클라우드 보관함을 불러오는 중입니다…','loading');
+  try{
+    const {doc,getDoc}=firebaseServices.firestoreApi;
+    const ref=doc(firebaseServices.db,'users',user.uid,'workspaces','main');
+    const snapshot=await getDoc(ref);
+    if(generation!==cloudAuthGeneration) return;
+    if(snapshot.exists() && snapshot.data()?.data){
+      hydrateData(snapshot.data().data);
+      showToast('Google 클라우드 보관함을 열었습니다.');
+    }else{
+      let initial=localCandidate;
+      if(hasMeaningfulPortfolio(localCandidate)){
+        const upload=confirm('클라우드 보관함이 비어 있습니다. 현재 화면의 포트폴리오와 투자 일지를 이 Google 계정에 저장할까요?');
+        if(!upload) initial=emptyPortfolioData();
+      }
+      hydrateData(initial);
+      cloudSyncReady=true;
+      await saveCloudWorkspaceNow();
+      showToast('새 Google 클라우드 보관함을 만들었습니다.');
+    }
+    cloudSyncReady=true;
+    lastBacktestSeries=[]; lastRiskDates=[]; renderAll(); updateCloudAuthUi();
+    setCloudStatus('클라우드 불러오기 완료 · 변경 내용은 자동 저장됩니다.','success');
+  }catch(error){
+    const cached=localStorage.getItem(workspaceStorageKey());
+    if(cached){ hydrateData(JSON.parse(cached)); renderAll(); }
+    cloudSyncReady=true;
+    setCloudStatus(`${friendlyFirebaseError(error)} · 이 기기의 임시 저장은 유지됩니다.`,'error');
+  }
+}
+
+function scheduleCloudSave(){
+  if(!cloudSyncReady || !cloudUser || !firebaseServices) return;
+  clearTimeout(cloudSaveTimer);
+  setCloudStatus('변경 사항 저장 대기 중…','loading');
+  cloudSaveTimer=setTimeout(()=>saveCloudWorkspaceNow(),900);
+}
+
+async function saveCloudWorkspaceNow(){
+  clearTimeout(cloudSaveTimer); cloudSaveTimer=null;
+  if(!cloudSyncReady || !cloudUser || !firebaseServices) return;
+  if(cloudSaveInFlight) await cloudSaveInFlight;
+  const payload=collectCloudData();
+  const bytes=new TextEncoder().encode(JSON.stringify(payload)).length;
+  if(bytes>850000){
+    setCloudStatus('클라우드 저장 크기를 초과했습니다. 긴 수동 가격 데이터는 JSON으로 백업하고 줄여 주세요.','error');
+    return;
+  }
+  const {doc,setDoc,serverTimestamp}=firebaseServices.firestoreApi;
+  const ref=doc(firebaseServices.db,'users',cloudUser.uid,'workspaces','main');
+  cloudSaveInFlight=setDoc(ref,{version:DATA_VERSION,updatedAt:serverTimestamp(),data:payload});
+  try{
+    await cloudSaveInFlight;
+    setCloudStatus(`클라우드 저장 완료 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`,'success');
+  }catch(error){ setCloudStatus(friendlyFirebaseError(error),'error'); }
+  finally{ cloudSaveInFlight=null; }
 }
 
 function persistState(){
@@ -2061,12 +2274,14 @@ function persistState(){
     const status = document.getElementById('saveStatus');
     if(status) status.textContent = '브라우저 자동 저장을 사용할 수 없습니다. JSON 백업을 이용해 주세요.';
   }
+  scheduleCloudSave();
 }
 
 function loadFromBrowser(){
   try{
     const active=JSON.parse(localStorage.getItem(ACTIVE_WORKSPACE_KEY) || 'null');
     if(active?.id){ activeWorkspaceId=String(active.id); activeWorkspaceLabel=String(active.label || `개인 보관함 ${activeWorkspaceId.slice(0,6)}`); }
+    if(activeWorkspaceId.startsWith('cloud-')) return false;
     let saved = localStorage.getItem(workspaceStorageKey());
     if(!saved && activeWorkspaceId==='default') saved=localStorage.getItem(STORAGE_KEY);
     if(!saved) return false;
@@ -2139,7 +2354,7 @@ function clearAllData(){
   document.getElementById('projectionYears').value = 20;
   ['statVolatility','statMDD','statCumReturn','statCAGR','statBeta','statSharpe','statSortino'].forEach(id=>document.getElementById(id).textContent='-');
   document.getElementById('correlationMatrix').innerHTML='<div class="empty">분석 실행 후 종목 간 상관관계가 표시됩니다.</div>';
-  document.getElementById('comparisonResult').innerHTML='<div class="empty">검색 결과나 포트폴리오에서 최대 4개 종목을 추가하세요.</div>';
+  document.getElementById('comparisonResult').innerHTML='<div class="empty">위 입력칸, 검색 결과 또는 포트폴리오에서 최대 4개 종목을 추가하세요.</div>';
   document.getElementById('xrayResult').innerHTML='<div class="empty">ETF 구성을 불러오면 결과가 표시됩니다.</div>';
   document.getElementById('planningResult').innerHTML='<div class="empty">05번 백테스트를 먼저 실행하면 실제 가격 경로를 이용해 계산합니다.</div>';
   resetHoldingForm();
@@ -2179,6 +2394,9 @@ document.getElementById('symbolSearch').addEventListener('keydown',event=>{
   if(event.key==='Enter'){ event.preventDefault(); searchSymbols(); }
   if(event.key==='Escape') document.getElementById('searchResults').classList.add('hidden');
 });
+document.getElementById('compareSymbolInput').addEventListener('keydown',event=>{
+  if(event.key==='Enter'){ event.preventDefault(); addCompareFromInput(); }
+});
 document.addEventListener('click',event=>{
   if(!event.target.closest('.search-shell')) document.getElementById('searchResults').classList.add('hidden');
 });
@@ -2195,7 +2413,8 @@ window.addEventListener('resize',()=>{
 /* 초기 렌더링 */
 loadFromBrowser();
 renderAll();
-updateWorkspaceStatus();
+updateCloudAuthUi();
+initializeCloudAuth();
 refreshMarketManifest();
 loadMarketCatalog().catch(()=>{});
 </script>
