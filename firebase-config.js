@@ -6,7 +6,7 @@
  * 실제 사용자 데이터 접근은 firestore.rules와 Google 로그인으로 보호합니다.
  */
 window.MQP_FIREBASE_CONFIG = Object.freeze({
-  apiKey: "AIzaSyBTXL7pFjLByBmAnaK929vOHECLzS4A_F8",
+  apiKey: "AIzaSyBTXL7pFjlByBmAnaK929vOHECLzS4A_F8",
   authDomain: "myquantplatform-825f9.firebaseapp.com",
   projectId: "myquantplatform-825f9",
   storageBucket: "myquantplatform-825f9.firebasestorage.app",
