@@ -1,0 +1,103 @@
+name: Update free market data
+
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "새로 만들 티커(쉼표로 구분). 비워두면 기존 캐시 전체 갱신"
+        required: false
+        type: string
+  schedule:
+    - cron: "35 23 * * 1-5"
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: update-free-market-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: >-
+      github.event_name != 'issues' ||
+      (github.event.issue.user.login == github.repository_owner && startsWith(github.event.issue.title, '[data]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      ISSUE_TITLE: ${{ github.event.issue.title || '' }}
+      INPUT_TICKERS: ${{ inputs.tickers || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install collector dependency
+        run: python -m pip install --disable-pip-version-check requests==2.32.4
+
+      - name: Build requested or scheduled snapshots
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            python scripts/build_market_cache.py --issue-title "$ISSUE_TITLE"
+          elif [[ -n "$INPUT_TICKERS" ]]; then
+            python scripts/build_market_cache.py --ticker "$INPUT_TICKERS"
+          else
+            python scripts/build_market_cache.py --refresh-cached
+          fi
+
+      - name: Refresh symbol catalog weekly
+        if: github.event_name == 'schedule' && github.event.schedule == '35 23 * * 1-5'
+        run: |
+          if [[ "$(date -u +%u)" == "1" ]]; then
+            python scripts/build_market_cache.py --catalog
+          fi
+
+      - name: Commit refreshed cache
+        id: commit
+        shell: bash
+        run: |
+          git add data/catalog.json data/manifest.json data/market 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update free market data cache [skip ci]"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Confirm issue request
+        if: github.event_name == 'issues' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body: '무료 데이터 파일을 생성했습니다. GitHub Pages 반영까지 보통 1~3분 걸립니다. 사이트에서 다시 검색해 주세요.'
+            });
+            await github.rest.issues.update({
+              ...context.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
+
+      - name: Report issue failure
+        if: github.event_name == 'issues' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.issue.number,
+              body: '데이터 생성에 실패했습니다. 티커를 확인하거나 Actions 탭에서 실행 로그를 확인해 주세요.'
+            });
