@@ -5,10 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>내 포트폴리오 관리</title>
 
-<!-- 차트 라이브러리: Chart.js를 CDN(인터넷상의 코드 저장소)에서 바로 불러옵니다.
-     별도 설치가 필요 없고, 인터넷에 연결된 상태에서 이 파일을 열면 자동으로 로드됩니다. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-
 <style>
   /* ===================== 디자인 토큰 (색상/타이포 변수) ===================== */
   :root{
@@ -63,14 +59,16 @@
   @media(max-width:900px){ .grid-2{ grid-template-columns:1fr; } }
 
   /* ===================== 폼 ===================== */
-  .form-row{ display:grid; grid-template-columns:repeat(6,1fr) auto; gap:8px; margin-bottom:10px; }
+  .form-row{ display:grid; grid-template-columns:repeat(7,minmax(95px,1fr)) auto auto; gap:8px; margin-bottom:10px; }
   @media(max-width:900px){ .form-row{ grid-template-columns:repeat(2,1fr); } }
+  .settings-row{ display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; }
+  .settings-field{ width:min(100%,280px); }
   label{ font-size:11px; color:var(--text-dim); display:block; margin-bottom:4px; }
   input, textarea, select{
     width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
     border-radius:8px; padding:9px 10px; font-family:var(--sans); font-size:13px;
   }
-  input:focus, textarea:focus{ outline:2px solid var(--accent-indigo); }
+  input:focus, textarea:focus, select:focus{ outline:2px solid var(--accent-indigo); outline-offset:1px; }
   textarea{ font-family:var(--mono); resize:vertical; }
   button{
     cursor:pointer; border:none; border-radius:8px; padding:10px 16px;
@@ -81,7 +79,9 @@
   .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--text-dim); }
   .btn-ghost:hover{ color:var(--text); border-color:var(--text-dim); }
   .btn-danger{ background:transparent; color:var(--accent-rose); border:1px solid rgba(248,113,113,.35); }
+  .btn-edit{ background:transparent; color:var(--accent-indigo); border:1px solid rgba(108,123,255,.4); }
   .btn-sm{ padding:6px 10px; font-size:12px; }
+  .row-actions{ display:flex; gap:6px; justify-content:flex-end; }
 
   /* ===================== 테이블 ===================== */
   table{ width:100%; border-collapse:collapse; font-size:13px; }
@@ -107,8 +107,9 @@
   .history-box small{ color:var(--text-dim); display:block; margin-bottom:6px; line-height:1.5; }
 
   .chart-wrap{ position:relative; height:280px; }
+  #backtestChart, #donutChart{ width:100%; height:100%; display:block; }
   .donut-wrap{ position:relative; height:260px; display:flex; align-items:center; justify-content:center; }
-  .donut-center{ position:absolute; text-align:center; pointer-events:none; }
+  .donut-center{ position:absolute; top:96px; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
   .donut-center .amt{ font-family:var(--mono); font-size:20px; font-weight:700; }
   .donut-center .lbl{ font-size:11px; color:var(--text-dim); }
 
@@ -117,6 +118,15 @@
   .footer-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
   .note{ font-size:12px; color:var(--text-dim); margin-top:14px; line-height:1.6; }
   .note b{ color:var(--text); }
+  .save-status{ color:var(--accent-mint); font-size:12px; margin-top:8px; min-height:18px; }
+  .toast{
+    position:fixed; right:20px; bottom:20px; z-index:10; max-width:min(380px,calc(100vw - 40px));
+    background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+    padding:12px 14px; color:var(--text); font-size:13px; box-shadow:0 12px 32px rgba(0,0,0,.35);
+    opacity:0; transform:translateY(8px); pointer-events:none; transition:.2s ease;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 </style>
 </head>
 <body>
@@ -149,10 +159,17 @@
   <div class="card">
     <h2><span class="idx">01</span> 투자 금액 설정</h2>
     <p class="card-desc">총 투자금액을 입력하면 종목별 목표비중에 따라 배분 금액이 자동 계산됩니다.</p>
-    <div style="max-width:280px;">
-      <label>총 투자금액 (원)</label>
-      <input type="number" id="inputTotalInvestment" value="10000000" step="10000">
+    <div class="settings-row">
+      <div class="settings-field">
+        <label for="inputTotalInvestment">총 투자금액 (원)</label>
+        <input type="number" id="inputTotalInvestment" value="10000000" min="0" step="10000">
+      </div>
+      <div class="settings-field">
+        <label for="inputUsdKrw">달러 환율 (USD/KRW)</label>
+        <input type="number" id="inputUsdKrw" value="1380" min="1" step="1">
+      </div>
     </div>
+    <div id="saveStatus" class="save-status" aria-live="polite"></div>
   </div>
 
   <!-- ===================== 종목 추가 & 포트폴리오 테이블 ===================== -->
@@ -161,14 +178,18 @@
     <p class="card-desc">시세는 네이버증권/구글 파이낸스 등에서 확인 후 직접 입력해 주세요. (현재가는 나중에 계속 업데이트하면서 쓰시면 됩니다)</p>
 
     <div class="form-row">
-      <div><label>티커/심볼</label><input id="fSymbol" placeholder="예: QQQM"></div>
-      <div><label>종목명</label><input id="fName" placeholder="예: 나스닥100 ETF"></div>
-      <div><label>목표비중(%)</label><input id="fWeight" type="number" step="0.1" placeholder="40"></div>
-      <div><label>보유수량</label><input id="fShares" type="number" step="0.0001" placeholder="12"></div>
-      <div><label>평균매입가</label><input id="fAvgPrice" type="number" step="0.01" placeholder="185.32"></div>
-      <div><label>현재가</label><input id="fCurPrice" type="number" step="0.01" placeholder="198.45"></div>
+      <div><label for="fSymbol">티커/심볼</label><input id="fSymbol" placeholder="예: QQQM"></div>
+      <div><label for="fName">종목명</label><input id="fName" placeholder="예: 나스닥100 ETF"></div>
+      <div><label for="fCurrency">거래통화</label><select id="fCurrency"><option value="USD">USD (달러)</option><option value="KRW">KRW (원)</option></select></div>
+      <div><label for="fWeight">목표비중(%)</label><input id="fWeight" type="number" min="0" max="100" step="0.1" placeholder="40"></div>
+      <div><label for="fShares">보유수량</label><input id="fShares" type="number" min="0" step="0.0001" placeholder="12"></div>
+      <div><label for="fAvgPrice">평균매입가</label><input id="fAvgPrice" type="number" min="0" step="0.01" placeholder="185.32"></div>
+      <div><label for="fCurPrice">현재가</label><input id="fCurPrice" type="number" min="0" step="0.01" placeholder="198.45"></div>
       <div style="display:flex; align-items:flex-end;">
-        <button class="btn-primary" onclick="addHolding()" style="width:100%;">추가</button>
+        <button type="button" class="btn-primary" id="saveHoldingBtn" onclick="addHolding()" style="width:100%;">추가</button>
+      </div>
+      <div id="cancelEditWrap" style="display:none; align-items:flex-end;">
+        <button type="button" class="btn-ghost" onclick="cancelEdit()" style="width:100%;">취소</button>
       </div>
     </div>
     <div id="weightMsg"></div>
@@ -185,7 +206,7 @@
             <th>현재비중</th>
             <th>손익률</th>
             <th>리밸런싱</th>
-            <th></th>
+            <th>관리</th>
           </tr>
         </thead>
         <tbody id="holdingsBody"></tbody>
@@ -210,7 +231,7 @@
 
     <div class="card">
       <h2><span class="idx">04</span> 리밸런싱 요약</h2>
-      <p class="card-desc">현재 평가금액 기준, 목표비중으로 돌아가려면 이렇게 매매하면 됩니다.</p>
+      <p class="card-desc">설정한 총 투자금액을 기준으로, 목표비중에 맞추려면 필요한 매매량을 계산합니다.</p>
       <div id="rebalanceList"></div>
     </div>
   </div>
@@ -227,14 +248,14 @@
     <div id="historyInputs"></div>
 
     <div style="margin:18px 0;">
-      <label>(선택) 비교지수 과거 종가 — 베타 계산용, 예: S&P500/코스피</label>
+      <label for="benchmarkHistory">(선택) 비교지수 과거 종가 — 베타 계산용, 예: S&P500/코스피</label>
       <textarea id="benchmarkHistory" rows="3" placeholder="한 줄에 하나씩, 종목들과 같은 개수로 입력"></textarea>
     </div>
 
     <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
       <div style="max-width:160px;">
-        <label>백테스팅 기간(년)</label>
-        <input type="number" id="backtestYears" value="3" step="0.5">
+        <label for="backtestYears">백테스팅 기간(년)</label>
+        <input type="number" id="backtestYears" value="3" min="0.1" step="0.5">
       </div>
       <button class="btn-primary" onclick="runRiskAnalysis()">위험도 분석 · 백테스팅 실행</button>
     </div>
@@ -256,6 +277,10 @@
         <div class="stat-label">연평균수익률 (CAGR)</div>
         <div class="stat-value" id="statCAGR">-</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">비교지수 대비 베타</div>
+        <div class="stat-value" id="statBeta">-</div>
+      </div>
     </div>
 
     <div class="chart-wrap" style="margin-top:20px;">
@@ -267,13 +292,15 @@
   <!-- ===================== 저장/불러오기 ===================== -->
   <div class="card">
     <h2><span class="idx">06</span> 저장 · 불러오기</h2>
-    <p class="card-desc">이 페이지는 새로고침하면 입력값이 사라집니다. 작업을 마치면 파일로 저장해 두었다가, 다음에 열 때 불러오세요.</p>
+    <p class="card-desc">입력 내용은 이 브라우저에 자동 저장됩니다. 다른 기기로 옮기거나 백업할 때는 JSON 파일을 이용하세요.</p>
     <div class="footer-actions">
-      <button class="btn-ghost" onclick="exportData()">💾 파일로 저장</button>
+      <button type="button" class="btn-ghost" onclick="exportData()">💾 JSON 백업</button>
       <label class="btn-ghost" style="display:inline-block;">
-        📂 파일 불러오기
+        📂 JSON 불러오기
         <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
       </label>
+      <button type="button" class="btn-ghost" onclick="exportCsv()">📊 CSV 내보내기</button>
+      <button type="button" class="btn-danger" onclick="clearAllData()">전체 초기화</button>
     </div>
     <p class="note">
       <b>사용법:</b> 이 파일(my-portfolio.html)은 인터넷 브라우저(크롬/엣지 등)로 더블클릭해서 여는 것만으로 바로 작동합니다.
@@ -286,58 +313,235 @@
 
 </div>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script>
 /* =====================================================================
    전역 상태(State)
    - 새로고침하면 초기화됩니다 (브라우저 저장소를 쓰지 않는 대신,
      "파일로 저장" 버튼으로 JSON 파일을 다운로드해 보관하는 방식 사용)
 ===================================================================== */
-let holdings = [];      // [{ id, symbol, name, targetWeight, shares, avgPrice, curPrice, history: [] }]
-let donutChartInstance = null;
-let backtestChartInstance = null;
+const STORAGE_KEY = 'myQuantPlatform.portfolio.v2';
+const DATA_VERSION = 2;
+let holdings = [];      // [{ id, symbol, name, currency, targetWeight, shares, avgPrice, curPrice, history: [] }]
+let lastBacktestSeries = [];
 let idSeq = 1;
+let editingId = null;
+let toastTimer = null;
+
+function finiteNumber(value, fallback=0){
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
+}
+
+function showToast(message){
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2600);
+}
+
+function prepareCanvas(canvas){
+  if(!canvas || typeof canvas.getContext!=='function') return null;
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(280,Math.round(rect.width || canvas.parentElement?.clientWidth || 600));
+  const height = Math.max(180,Math.round(rect.height || canvas.parentElement?.clientHeight || 260));
+  const ratio = Math.max(1,window.devicePixelRatio || 1);
+  canvas.width = Math.round(width*ratio);
+  canvas.height = Math.round(height*ratio);
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return null;
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.clearRect(0,0,width,height);
+  return {ctx,width,height};
+}
+
+function drawDonutChart(labels,values,colors){
+  const prepared = prepareCanvas(document.getElementById('donutChart'));
+  if(!prepared) return;
+  const {ctx,width} = prepared;
+  const total = values.reduce((a,b)=>a+b,0);
+  if(total<=0) return;
+  const centerX = width/2, centerY = 96, radius = 70, thickness = 24;
+  let angle = -Math.PI/2;
+  values.forEach((value,i)=>{
+    const next = angle + (value/total)*Math.PI*2;
+    ctx.beginPath();
+    ctx.arc(centerX,centerY,radius,angle,next);
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = thickness;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+    angle = next;
+  });
+
+  ctx.font = '11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.textBaseline = 'middle';
+  const items = labels.map((label,i)=>({label:`${label} ${values[i].toFixed(1)}%`,color:colors[i]}));
+  const itemWidths = items.map(item=>ctx.measureText(item.label).width+28);
+  let x=16, y=202;
+  items.forEach((item,i)=>{
+    if(x+itemWidths[i]>width-12){ x=16; y+=22; }
+    ctx.fillStyle=item.color; ctx.fillRect(x,y-5,10,10);
+    ctx.fillStyle='#E7ECF7'; ctx.fillText(item.label,x+16,y);
+    x+=itemWidths[i];
+  });
+}
+
+function drawBacktestChart(values){
+  const prepared = prepareCanvas(document.getElementById('backtestChart'));
+  if(!prepared || !values.length) return;
+  const {ctx,width,height} = prepared;
+  const margin={left:52,right:16,top:30,bottom:34};
+  const plotW=width-margin.left-margin.right, plotH=height-margin.top-margin.bottom;
+  let min=Math.min(...values), max=Math.max(...values);
+  const pad=Math.max((max-min)*0.12,1);
+  min-=pad; max+=pad;
+  const xAt=i=>margin.left+(i/(values.length-1))*plotW;
+  const yAt=v=>margin.top+((max-v)/(max-min))*plotH;
+
+  ctx.font='11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.fillStyle='#8B96B3';
+  ctx.strokeStyle='#2A3550'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=margin.top+(plotH*i/4);
+    ctx.beginPath(); ctx.moveTo(margin.left,y); ctx.lineTo(width-margin.right,y); ctx.stroke();
+    const label=(max-(max-min)*i/4).toFixed(1);
+    ctx.fillText(label,6,y+4);
+  }
+
+  const gradient=ctx.createLinearGradient(0,margin.top,0,height-margin.bottom);
+  gradient.addColorStop(0,'rgba(108,123,255,.28)');
+  gradient.addColorStop(1,'rgba(108,123,255,.02)');
+  ctx.beginPath();
+  values.forEach((v,i)=>i===0?ctx.moveTo(xAt(i),yAt(v)):ctx.lineTo(xAt(i),yAt(v)));
+  ctx.lineTo(xAt(values.length-1),height-margin.bottom);
+  ctx.lineTo(xAt(0),height-margin.bottom); ctx.closePath();
+  ctx.fillStyle=gradient; ctx.fill();
+
+  ctx.beginPath();
+  values.forEach((v,i)=>i===0?ctx.moveTo(xAt(i),yAt(v)):ctx.lineTo(xAt(i),yAt(v)));
+  ctx.strokeStyle='#6C7BFF'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#E7ECF7'; ctx.font='12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.fillText('포트폴리오 누적 지수 (시작=100)',margin.left,16);
+  ctx.fillStyle='#8B96B3'; ctx.font='11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.fillText('시작',margin.left,height-10);
+  const endLabel='현재'; const endWidth=ctx.measureText(endLabel).width;
+  ctx.fillText(endLabel,width-margin.right-endWidth,height-10);
+}
+
+function getUsdKrw(){
+  return Math.max(1, finiteNumber(document.getElementById('inputUsdKrw').value, 1380));
+}
+
+function normalizeHolding(raw, fallbackId){
+  const symbol = String(raw?.symbol || '').trim().toUpperCase().slice(0, 20);
+  return {
+    id: Math.max(1, Math.trunc(finiteNumber(raw?.id, fallbackId))),
+    symbol,
+    name: String(raw?.name || '').trim().slice(0, 80),
+    currency: raw?.currency === 'KRW' || (!raw?.currency && /^\d{6}$/.test(symbol)) ? 'KRW' : 'USD',
+    targetWeight: Math.min(100, Math.max(0, finiteNumber(raw?.targetWeight))),
+    shares: Math.max(0, finiteNumber(raw?.shares)),
+    avgPrice: Math.max(0, finiteNumber(raw?.avgPrice)),
+    curPrice: Math.max(0, finiteNumber(raw?.curPrice)),
+    history: Array.isArray(raw?.history)
+      ? raw.history.map(v=>finiteNumber(v, NaN)).filter(v=>Number.isFinite(v) && v>0).slice(0, 5000)
+      : []
+  };
+}
 
 /* =====================================================================
    1. 종목 추가/삭제
 ===================================================================== */
 function addHolding(){
-  const symbol = document.getElementById('fSymbol').value.trim();
+  const symbol = document.getElementById('fSymbol').value.trim().toUpperCase();
   const name = document.getElementById('fName').value.trim();
+  const currency = document.getElementById('fCurrency').value;
   const weight = parseFloat(document.getElementById('fWeight').value);
-  const shares = parseFloat(document.getElementById('fShares').value) || 0;
-  const avgPrice = parseFloat(document.getElementById('fAvgPrice').value) || 0;
-  const curPrice = parseFloat(document.getElementById('fCurPrice').value) || 0;
+  const shares = finiteNumber(document.getElementById('fShares').value);
+  const avgPrice = finiteNumber(document.getElementById('fAvgPrice').value);
+  const curPrice = finiteNumber(document.getElementById('fCurPrice').value);
 
   if(!symbol || isNaN(weight)){
     alert('티커/심볼과 목표비중은 반드시 입력해 주세요.');
     return;
   }
+  if(weight < 0 || weight > 100 || shares < 0 || avgPrice < 0 || curPrice < 0){
+    alert('목표비중은 0~100%, 수량과 가격은 0 이상의 값으로 입력해 주세요.');
+    return;
+  }
+  if(holdings.some(h=>h.symbol===symbol && h.id!==editingId)){
+    alert(`${symbol} 종목이 이미 있습니다. 기존 행의 수정 버튼을 이용해 주세요.`);
+    return;
+  }
 
-  holdings.push({
-    id: idSeq++,
-    symbol, name, targetWeight: weight, shares, avgPrice, curPrice,
-    history: [] // 과거 종가 배열 (백테스팅/위험도 분석용)
-  });
+  if(editingId !== null){
+    const existing = holdings.find(h=>h.id===editingId);
+    if(existing) Object.assign(existing, { symbol, name, currency, targetWeight:weight, shares, avgPrice, curPrice });
+    showToast(`${symbol} 정보를 수정했습니다.`);
+  } else {
+    holdings.push({
+      id: idSeq++, symbol, name, currency, targetWeight:weight, shares, avgPrice, curPrice,
+      history: []
+    });
+    showToast(`${symbol} 종목을 추가했습니다.`);
+  }
 
-  // 입력폼 초기화
-  ['fSymbol','fName','fWeight','fShares','fAvgPrice','fCurPrice'].forEach(id=>{
-    document.getElementById(id).value = '';
-  });
-
+  resetHoldingForm();
   renderAll();
 }
 
 function removeHolding(id){
+  const target = holdings.find(h=>h.id===id);
+  if(!target || !confirm(`${target.symbol} 종목을 삭제할까요?`)) return;
   holdings = holdings.filter(h => h.id !== id);
+  if(editingId===id) resetHoldingForm();
+  showToast(`${target.symbol} 종목을 삭제했습니다.`);
   renderAll();
 }
+
+function editHolding(id){
+  const h = holdings.find(item=>item.id===id);
+  if(!h) return;
+  editingId = id;
+  document.getElementById('fSymbol').value = h.symbol;
+  document.getElementById('fName').value = h.name;
+  document.getElementById('fCurrency').value = h.currency || 'USD';
+  document.getElementById('fWeight').value = h.targetWeight;
+  document.getElementById('fShares').value = h.shares;
+  document.getElementById('fAvgPrice').value = h.avgPrice;
+  document.getElementById('fCurPrice').value = h.curPrice;
+  document.getElementById('saveHoldingBtn').textContent = '수정 저장';
+  document.getElementById('cancelEditWrap').style.display = 'flex';
+  document.getElementById('fSymbol').focus();
+}
+
+function resetHoldingForm(){
+  editingId = null;
+  ['fSymbol','fName','fWeight','fShares','fAvgPrice','fCurPrice'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fCurrency').value = 'USD';
+  document.getElementById('saveHoldingBtn').textContent = '추가';
+  document.getElementById('cancelEditWrap').style.display = 'none';
+}
+
+function cancelEdit(){ resetHoldingForm(); }
 
 /* =====================================================================
    2. 계산 로직 (설계 문서의 공식을 그대로 코드화)
 ===================================================================== */
 function getTotalInvestment(){
-  return parseFloat(document.getElementById('inputTotalInvestment').value) || 0;
+  return Math.max(0, finiteNumber(document.getElementById('inputTotalInvestment').value));
 }
+
+function fxRate(h){ return h.currency === 'USD' ? getUsdKrw() : 1; }
 
 // 종목별 배분금액 = 총투자금액 × (목표비중/100)
 function allocatedAmount(h){
@@ -346,7 +550,11 @@ function allocatedAmount(h){
 
 // 종목별 평가금액 = 보유수량 × 현재가
 function currentValue(h){
-  return h.shares * h.curPrice;
+  return h.shares * h.curPrice * fxRate(h);
+}
+
+function costBasis(h){
+  return h.shares * h.avgPrice * fxRate(h);
 }
 
 function totalCurrentValue(){
@@ -371,19 +579,21 @@ function calcRebalance(h, totalVal){
   const targetAmount = totalVal * (h.targetWeight / 100);
   const curAmount = currentValue(h);
   const diffAmount = targetAmount - curAmount;
-  const diffShares = h.curPrice ? diffAmount / h.curPrice : 0;
+  const priceInWon = h.curPrice * fxRate(h);
+  const diffShares = priceInWon ? diffAmount / priceInWon : 0;
   return { diffAmount, diffShares };
 }
 
 /* =====================================================================
    3. 렌더링
 ===================================================================== */
-function renderAll(){
+function renderAll({renderHistory=true}={}){
   renderStats();
   renderTable();
   renderDonut();
   renderRebalanceList();
-  renderHistoryInputs();
+  if(renderHistory) renderHistoryInputs();
+  persistState();
 }
 
 function fmtWon(n){
@@ -392,11 +602,15 @@ function fmtWon(n){
 function fmtPct(n){
   return (n>=0?'+':'') + n.toFixed(2) + '%';
 }
+function fmtPrice(n, currency){
+  if(currency==='KRW') return Math.round(n).toLocaleString('ko-KR')+'원';
+  return '$'+finiteNumber(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 
 function renderStats(){
   const totalInv = getTotalInvestment();
   const totalCur = totalCurrentValue();
-  const pnl = totalCur - holdings.reduce((s,h)=> s + h.shares*h.avgPrice, 0);
+  const pnl = totalCur - holdings.reduce((s,h)=> s + costBasis(h), 0);
   const wSum = totalTargetWeight();
 
   document.getElementById('statTotalInvestment').textContent = fmtWon(totalInv);
@@ -408,14 +622,16 @@ function renderStats(){
 
   const wEl = document.getElementById('statWeightSum');
   wEl.textContent = wSum.toFixed(1) + '%';
-  wEl.className = 'stat-value ' + (Math.abs(wSum-100)<0.01 ? 'pos' : '');
+  wEl.className = 'stat-value ' + (Math.abs(wSum-100)<0.01 ? 'pos' : (wSum>100 ? 'neg' : ''));
 
   const msg = document.getElementById('weightMsg');
   if(holdings.length===0){ msg.innerHTML=''; }
   else if(Math.abs(wSum-100) < 0.01){
     msg.innerHTML = '<div class="weight-ok">✓ 목표비중 합계가 100%입니다.</div>';
+  } else if(wSum < 100) {
+    msg.innerHTML = `<div class="weight-warn">목표비중 합계 ${wSum.toFixed(1)}% · 남은 ${(100-wSum).toFixed(1)}%는 현금 비중으로 계산합니다.</div>`;
   } else {
-    msg.innerHTML = `<div class="weight-warn">⚠ 목표비중 합계가 ${wSum.toFixed(1)}%입니다. 100%가 되도록 조정해 보세요 (부족분은 현금으로 볼 수도 있습니다).</div>`;
+    msg.innerHTML = `<div class="weight-warn">⚠ 목표비중 합계가 ${wSum.toFixed(1)}%로 100%를 초과했습니다.</div>`;
   }
 }
 
@@ -427,7 +643,7 @@ function renderTable(){
   if(holdings.length===0){ empty.style.display='block'; return; }
   empty.style.display='none';
 
-  const totalVal = totalCurrentValue();
+  const totalVal = getTotalInvestment();
 
   holdings.forEach(h=>{
     const alloc = allocatedAmount(h);
@@ -445,9 +661,9 @@ function renderTable(){
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="name-cell">
-        <div class="sym">${h.symbol}</div>
-        <div class="full">${h.name || ''}</div>
-        <button class="toggle-history" onclick="toggleHistory(${h.id})">과거 가격 입력</button>
+        <div class="sym">${escapeHtml(h.symbol)}</div>
+        <div class="full">${escapeHtml(h.name || '')} · ${h.currency || 'USD'} · 현재가 ${fmtPrice(h.curPrice,h.currency)}</div>
+        <button type="button" class="toggle-history" onclick="toggleHistory(${h.id})">과거 가격 입력</button>
       </td>
       <td>${h.targetWeight.toFixed(1)}%</td>
       <td>${fmtWon(alloc)}</td>
@@ -456,7 +672,10 @@ function renderTable(){
       <td>${curWeight.toFixed(1)}%</td>
       <td class="${pnl===null?'':(pnl>=0?'pos':'neg')}">${pnl===null?'-':fmtPct(pnl)}</td>
       <td><span class="tag ${tag}">${tagText}</span></td>
-      <td><button class="btn-danger btn-sm" onclick="removeHolding(${h.id})">삭제</button></td>
+      <td><div class="row-actions">
+        <button type="button" class="btn-edit btn-sm" onclick="editHolding(${h.id})">수정</button>
+        <button type="button" class="btn-danger btn-sm" onclick="removeHolding(${h.id})">삭제</button>
+      </div></td>
     `;
     body.appendChild(tr);
   });
@@ -464,32 +683,19 @@ function renderTable(){
 
 function renderDonut(){
   const ctx = document.getElementById('donutChart');
-  if(donutChartInstance){ donutChartInstance.destroy(); }
   if(holdings.length===0){
+    prepareCanvas(ctx);
     document.getElementById('donutCenter').innerHTML = '<div class="amt">-</div><div class="lbl">종목을 추가해 주세요</div>';
     return;
   }
 
+  const weightSum = totalTargetWeight();
+  const cashWeight = Math.max(0,100-weightSum);
+  const labels = holdings.map(h=>h.symbol).concat(cashWeight>0 ? ['현금'] : []);
+  const values = holdings.map(h=>h.targetWeight).concat(cashWeight>0 ? [cashWeight] : []);
   const colors = ['#6C7BFF','#34D399','#F2B84B','#F87171','#38BDF8','#A78BFA','#FB923C','#4ADE80'];
-  donutChartInstance = new Chart(ctx, {
-    type: 'doughnut',
-    data:{
-      labels: holdings.map(h=>h.symbol),
-      datasets:[{
-        data: holdings.map(h=>h.targetWeight),
-        backgroundColor: holdings.map((_,i)=>colors[i%colors.length]),
-        borderColor: '#131B2E',
-        borderWidth: 3,
-      }]
-    },
-    options:{
-      cutout:'68%',
-      plugins:{
-        legend:{ position:'bottom', labels:{ color:'#E7ECF7', font:{size:11} } },
-        tooltip:{ callbacks:{ label: (c)=> `${c.label}: ${c.parsed}%` } }
-      }
-    }
-  });
+  const chartColors = values.map((_,i)=>i===values.length-1 && cashWeight>0 ? '#475569' : colors[i%colors.length]);
+  drawDonutChart(labels,values,chartColors);
 
   document.getElementById('donutCenter').innerHTML =
     `<div class="amt">${fmtWon(getTotalInvestment())}</div><div class="lbl">총 투자금액</div>`;
@@ -499,23 +705,27 @@ function renderRebalanceList(){
   const el = document.getElementById('rebalanceList');
   if(holdings.length===0){ el.innerHTML = '<div class="empty">종목을 추가하면 리밸런싱 계산 결과가 표시됩니다.</div>'; return; }
 
-  const totalVal = totalCurrentValue();
+  const totalVal = getTotalInvestment();
   let html = '';
   holdings.forEach(h=>{
     const reb = calcRebalance(h, totalVal);
     if(Math.abs(reb.diffShares) < 0.0001){
       html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
-        <b>${h.symbol}</b> — <span style="color:var(--text-dim);">비중 유지 (매매 불필요)</span>
+        <b>${escapeHtml(h.symbol)}</b> — <span style="color:var(--text-dim);">비중 유지 (매매 불필요)</span>
       </div>`;
     } else {
       const action = reb.diffShares > 0 ? '매수' : '매도';
       const color = reb.diffShares > 0 ? 'pos' : 'neg';
       html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
-        <b>${h.symbol}</b> — <span class="${color}">${action} ${Math.abs(reb.diffShares).toFixed(2)}주</span>
+        <b>${escapeHtml(h.symbol)}</b> — <span class="${color}">${action} ${Math.abs(reb.diffShares).toFixed(4)}주</span>
         <span style="color:var(--text-dim);"> (약 ${fmtWon(Math.abs(reb.diffAmount))})</span>
       </div>`;
     }
   });
+  const cashWeight = Math.max(0,100-totalTargetWeight());
+  if(cashWeight>0){
+    html += `<div style="padding:8px 0; font-size:13px;"><b>현금</b> — 목표 ${cashWeight.toFixed(1)}% <span style="color:var(--text-dim);">(${fmtWon(totalVal*cashWeight/100)})</span></div>`;
+  }
   el.innerHTML = html;
 }
 
@@ -524,17 +734,32 @@ function renderRebalanceList(){
 ===================================================================== */
 function renderHistoryInputs(){
   const wrap = document.getElementById('historyInputs');
+  const openIds = new Set([...wrap.querySelectorAll('.history-box.open')].map(el=>el.id));
   wrap.innerHTML = '';
   holdings.forEach(h=>{
     const box = document.createElement('div');
-    box.className = 'history-box';
+    box.className = 'history-box' + (openIds.has(`history-${h.id}`) ? ' open' : '');
     box.id = `history-${h.id}`;
     box.innerHTML = `
-      <small><b>${h.symbol}</b> 과거 종가 — 한 줄에 하나씩, 오래된 날짜 → 최근 날짜 순으로 붙여넣으세요.</small>
-      <textarea rows="6" id="historyInput-${h.id}" placeholder="185.32&#10;186.10&#10;184.90&#10;...">${h.history.join('\n')}</textarea>
+      <small><b>${escapeHtml(h.symbol)}</b> 과거 종가 — 한 줄에 하나씩, 오래된 날짜 → 최근 날짜 순으로 붙여넣으세요.</small>
+      <textarea rows="6" id="historyInput-${h.id}" oninput="updateHistory(${h.id},this.value)" placeholder="185.32&#10;186.10&#10;184.90&#10;...">${escapeHtml(h.history.join('\n'))}</textarea>
     `;
     wrap.appendChild(box);
   });
+}
+
+function parsePriceSeries(raw){
+  return String(raw || '').split(/\r?\n/)
+    .map(s=>Number(s.replaceAll(',','').trim()))
+    .filter(n=>Number.isFinite(n) && n>0)
+    .slice(0,5000);
+}
+
+function updateHistory(id, raw){
+  const h = holdings.find(item=>item.id===id);
+  if(!h) return;
+  h.history = parsePriceSeries(raw);
+  persistState();
 }
 
 function toggleHistory(id){
@@ -549,12 +774,13 @@ function toggleHistory(id){
 function dailyReturns(prices){
   const rets = [];
   for(let i=1;i<prices.length;i++){
-    rets.push((prices[i]-prices[i-1]) / prices[i-1]);
+    if(prices[i-1] > 0) rets.push((prices[i]-prices[i-1]) / prices[i-1]);
   }
   return rets;
 }
 
 function stdev(arr){
+  if(arr.length < 2) return null;
   const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
   const variance = arr.reduce((a,b)=> a + Math.pow(b-mean,2), 0) / (arr.length - 1);
   return Math.sqrt(variance);
@@ -562,8 +788,9 @@ function stdev(arr){
 
 // 연율화 변동성(%) = 일별수익률 표준편차 × √252 × 100
 function annualizedVolatility(prices){
-  if(prices.length < 2) return null;
-  return stdev(dailyReturns(prices)) * Math.sqrt(252) * 100;
+  if(prices.length < 3) return null;
+  const deviation = stdev(dailyReturns(prices));
+  return deviation===null ? null : deviation * Math.sqrt(252) * 100;
 }
 
 // 베타 = Cov(종목수익률, 시장수익률) / Var(시장수익률)
@@ -585,6 +812,7 @@ function calcBeta(stockPrices, marketPrices){
 
 // MDD(%) = 시계열의 최고점 대비 최대 낙폭
 function calcMDD(values){
+  if(!values.length || values[0]<=0) return null;
   let peak = values[0];
   let mdd = 0;
   values.forEach(v=>{
@@ -599,14 +827,14 @@ function runRiskAnalysis(){
   // 1) 각 종목의 textarea에서 과거 종가 읽어오기
   const tracked = [];
   holdings.forEach(h=>{
-    const raw = document.getElementById(`historyInput-${h.id}`)?.value || '';
-    const prices = raw.split('\n').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+    const raw = document.getElementById(`historyInput-${h.id}`)?.value || h.history.join('\n');
+    const prices = parsePriceSeries(raw);
     h.history = prices;
-    if(prices.length >= 2) tracked.push(h);
+    if(prices.length >= 3) tracked.push(h);
   });
 
   if(tracked.length === 0){
-    alert('과거 가격이 입력된 종목이 없습니다. 최소 한 종목 이상 입력해 주세요.');
+    alert('과거 가격을 종목당 최소 3개 이상 입력해 주세요.');
     return;
   }
 
@@ -623,6 +851,10 @@ function runRiskAnalysis(){
   // 2) 정규화 지수 계산: Index_i(t) = P_i(t)/P_i(0) * 100
   //    비중은 "가격 데이터가 있는 종목들" 사이에서 다시 100%로 정규화해서 사용
   const weightSum = tracked.reduce((s,h)=> s + h.targetWeight, 0);
+  if(weightSum<=0){
+    alert('과거 가격을 입력한 종목의 목표비중 합계가 0%입니다.');
+    return;
+  }
   const n = minLen;
   const portfolioIndex = new Array(n).fill(0);
 
@@ -637,63 +869,52 @@ function runRiskAnalysis(){
   // 3) 누적수익률, MDD, 변동성 계산
   const cumReturn = (portfolioIndex[n-1] - 100);
   const mdd = calcMDD(portfolioIndex);
-  const years = parseFloat(document.getElementById('backtestYears').value) || 1;
-  const cagr = (Math.pow(portfolioIndex[n-1]/100, 1/years) - 1) * 100;
+  const years = finiteNumber(document.getElementById('backtestYears').value);
+  if(years<=0){
+    alert('백테스팅 기간은 0보다 큰 값으로 입력해 주세요.');
+    return;
+  }
+  const cagr = portfolioIndex[n-1]>0 ? (Math.pow(portfolioIndex[n-1]/100, 1/years) - 1) * 100 : null;
 
   // 포트폴리오 변동성: 정규화 지수 시계열 자체의 일별 수익률로 계산
   const portVol = annualizedVolatility(portfolioIndex);
 
-  document.getElementById('statVolatility').textContent = portVol ? portVol.toFixed(1)+'%' : '-';
+  document.getElementById('statVolatility').textContent = portVol===null ? '-' : portVol.toFixed(1)+'%';
   const mddEl = document.getElementById('statMDD');
-  mddEl.textContent = mdd.toFixed(1)+'%'; mddEl.className = 'stat-value neg';
+  mddEl.textContent = mdd===null ? '-' : mdd.toFixed(1)+'%'; mddEl.className = 'stat-value neg';
   const cumEl = document.getElementById('statCumReturn');
   cumEl.textContent = fmtPct(cumReturn); cumEl.className = 'stat-value ' + (cumReturn>=0?'pos':'neg');
   const cagrEl = document.getElementById('statCAGR');
-  cagrEl.textContent = fmtPct(cagr); cagrEl.className = 'stat-value ' + (cagr>=0?'pos':'neg');
+  cagrEl.textContent = cagr===null ? '-' : fmtPct(cagr); cagrEl.className = 'stat-value ' + (cagr!==null && cagr>=0?'pos':'neg');
 
   // 4) 베타 계산 (비교지수가 입력된 경우)
   const benchRaw = document.getElementById('benchmarkHistory').value;
-  const benchPrices = benchRaw.split('\n').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x));
+  const benchPrices = parsePriceSeries(benchRaw);
+  const betaEl = document.getElementById('statBeta');
+  betaEl.textContent = '-';
+  betaEl.className = 'stat-value';
   if(benchPrices.length === n){
     const beta = calcBeta(portfolioIndex, benchPrices);
     if(beta !== null){
-      document.getElementById('statVolatility').textContent += ` (β ${beta.toFixed(2)})`;
+      betaEl.textContent = beta.toFixed(2);
+      betaEl.className = 'stat-value ' + (beta>1.2 ? 'neg' : (beta<0.8 ? 'pos' : ''));
     }
+  } else if(benchPrices.length>0) {
+    showToast(`비교지수는 종목과 같은 ${n}개의 가격이 필요합니다.`);
   }
 
   // 5) 백테스팅 라인 차트 렌더링
-  const ctx = document.getElementById('backtestChart');
-  if(backtestChartInstance){ backtestChartInstance.destroy(); }
-  backtestChartInstance = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels: portfolioIndex.map((_,i)=> i===0? '시작' : (i===n-1? '현재':`${i}일`)),
-      datasets:[{
-        label:'포트폴리오 누적 지수 (시작=100)',
-        data: portfolioIndex,
-        borderColor:'#6C7BFF',
-        backgroundColor:'rgba(108,123,255,0.12)',
-        fill:true, tension:0.25, pointRadius:0, borderWidth:2,
-      }]
-    },
-    options:{
-      plugins:{ legend:{ labels:{ color:'#E7ECF7' } } },
-      scales:{
-        x:{ ticks:{ color:'#8B96B3', maxTicksLimit:8 }, grid:{ color:'#2A3550' } },
-        y:{ ticks:{ color:'#8B96B3' }, grid:{ color:'#2A3550' } }
-      }
-    }
-  });
+  lastBacktestSeries = portfolioIndex;
+  persistState();
+  drawBacktestChart(portfolioIndex);
 }
 
 /* =====================================================================
    6. 저장 / 불러오기 (localStorage 대신 JSON 파일 다운로드 방식 사용)
 ===================================================================== */
 function exportData(){
-  const data = {
-    totalInvestment: getTotalInvestment(),
-    holdings: holdings
-  };
+  syncAllHistoryFromInputs();
+  const data = collectData();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -701,6 +922,7 @@ function exportData(){
   a.download = `portfolio-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  showToast('JSON 백업 파일을 저장했습니다.');
 }
 
 function importData(event){
@@ -710,21 +932,137 @@ function importData(event){
   reader.onload = (e)=>{
     try{
       const data = JSON.parse(e.target.result);
-      document.getElementById('inputTotalInvestment').value = data.totalInvestment || 10000000;
-      holdings = data.holdings || [];
-      idSeq = Math.max(1, ...holdings.map(h=>h.id||0)) + 1;
+      hydrateData(data);
       renderAll();
+      showToast('백업 파일을 불러왔습니다.');
     }catch(err){
       alert('파일을 읽는 데 실패했습니다. 올바른 저장 파일인지 확인해 주세요.');
     }
+    event.target.value = '';
   };
   reader.readAsText(file);
 }
 
-/* 투자금액 입력이 바뀔 때마다 화면 갱신 */
-document.getElementById('inputTotalInvestment').addEventListener('input', renderAll);
+function collectData(){
+  return {
+    version: DATA_VERSION,
+    savedAt: new Date().toISOString(),
+    totalInvestment: getTotalInvestment(),
+    usdKrw: getUsdKrw(),
+    backtestYears: Math.max(0.1,finiteNumber(document.getElementById('backtestYears').value,3)),
+    benchmarkHistory: parsePriceSeries(document.getElementById('benchmarkHistory').value),
+    holdings
+  };
+}
+
+function hydrateData(data){
+  if(!data || typeof data!=='object' || !Array.isArray(data.holdings)) throw new Error('invalid data');
+  document.getElementById('inputTotalInvestment').value = Math.max(0,finiteNumber(data.totalInvestment,10000000));
+  document.getElementById('inputUsdKrw').value = Math.max(1,finiteNumber(data.usdKrw,1380));
+  document.getElementById('backtestYears').value = Math.max(0.1,finiteNumber(data.backtestYears,3));
+  const benchmark = Array.isArray(data.benchmarkHistory)
+    ? data.benchmarkHistory.map(v=>finiteNumber(v,NaN)).filter(Number.isFinite)
+    : [];
+  document.getElementById('benchmarkHistory').value = benchmark.join('\n');
+
+  const seen = new Set();
+  holdings = data.holdings.slice(0,200).map((h,i)=>normalizeHolding({...h,id:i+1},i+1))
+    .filter(h=>h.symbol && !seen.has(h.symbol) && seen.add(h.symbol));
+  holdings.forEach((h,i)=>h.id=i+1);
+  idSeq = holdings.length + 1;
+  resetHoldingForm();
+}
+
+function persistState(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(collectData()));
+    const status = document.getElementById('saveStatus');
+    if(status) status.textContent = `✓ 이 브라우저에 자동 저장됨 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
+  }catch(err){
+    const status = document.getElementById('saveStatus');
+    if(status) status.textContent = '브라우저 자동 저장을 사용할 수 없습니다. JSON 백업을 이용해 주세요.';
+  }
+}
+
+function loadFromBrowser(){
+  try{
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if(!saved) return false;
+    hydrateData(JSON.parse(saved));
+    return true;
+  }catch(err){ return false; }
+}
+
+function syncAllHistoryFromInputs(){
+  holdings.forEach(h=>{
+    const input = document.getElementById(`historyInput-${h.id}`);
+    if(input) h.history = parsePriceSeries(input.value);
+  });
+}
+
+function csvCell(value){
+  let text = String(value ?? '');
+  if(/^[=+\-@]/.test(text)) text = "'" + text;
+  return `"${text.replaceAll('"','""')}"`;
+}
+
+function exportCsv(){
+  const totalVal = totalCurrentValue();
+  const rows = [['티커','종목명','통화','목표비중(%)','보유수량','평균매입가','현재가','평가금액(원)','현재비중(%)','손익률(%)']];
+  holdings.forEach(h=>rows.push([
+    h.symbol,h.name,h.currency,h.targetWeight,h.shares,h.avgPrice,h.curPrice,Math.round(currentValue(h)),
+    totalVal ? (currentValue(h)/totalVal*100).toFixed(2) : '0.00',
+    pnlPercent(h)===null ? '' : pnlPercent(h).toFixed(2)
+  ]));
+  const csv = '\uFEFF' + rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `portfolio-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV 파일을 저장했습니다.');
+}
+
+function clearAllData(){
+  if(!confirm('포트폴리오와 과거 가격 데이터를 모두 초기화할까요? JSON으로 백업하지 않은 내용은 복구할 수 없습니다.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  holdings = [];
+  lastBacktestSeries = [];
+  idSeq = 1;
+  document.getElementById('inputTotalInvestment').value = 10000000;
+  document.getElementById('inputUsdKrw').value = 1380;
+  document.getElementById('benchmarkHistory').value = '';
+  document.getElementById('backtestYears').value = 3;
+  ['statVolatility','statMDD','statCumReturn','statCAGR','statBeta'].forEach(id=>document.getElementById(id).textContent='-');
+  resetHoldingForm();
+  renderAll();
+  showToast('모든 데이터를 초기화했습니다.');
+}
+
+/* 투자금액·환율이 바뀔 때마다 계산과 자동 저장 */
+['inputTotalInvestment','inputUsdKrw'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>renderAll({renderHistory:false}));
+});
+['backtestYears','benchmarkHistory'].forEach(id=>document.getElementById(id).addEventListener('input',persistState));
+['fSymbol','fName','fWeight','fShares','fAvgPrice','fCurPrice'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',event=>{
+    if(event.key==='Enter'){ event.preventDefault(); addHolding(); }
+  });
+});
+
+let resizeTimer;
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    renderDonut();
+    if(lastBacktestSeries.length) drawBacktestChart(lastBacktestSeries);
+  },120);
+});
 
 /* 초기 렌더링 */
+loadFromBrowser();
 renderAll();
 </script>
 </body>
