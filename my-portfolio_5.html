@@ -163,6 +163,13 @@
   .journal-list{ display:flex; flex-direction:column; gap:8px; max-height:280px; overflow:auto; }
   .journal-entry{ background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px; font-size:12px; }
   .journal-entry time{ color:var(--text-dim); display:block; margin-bottom:4px; }
+  .source-strip{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+  .source-pill{ display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); border:1px solid var(--border); border-radius:100px; padding:4px 8px; font-size:11px; text-decoration:none; }
+  .source-pill:hover{ color:var(--text); border-color:var(--text-dim); }
+  .data-request{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:13px; border:1px solid rgba(242,184,75,.4); background:rgba(242,184,75,.07); border-radius:10px; margin-top:12px; }
+  .workspace-box{ display:grid; grid-template-columns:minmax(180px,1fr) auto; gap:8px; max-width:620px; padding:14px; border:1px solid var(--border); background:var(--surface-2); border-radius:10px; margin-bottom:14px; }
+  @media(max-width:620px){ .workspace-box{ grid-template-columns:1fr; } }
+  .freshness{ color:var(--accent-mint); font-size:11px; }
   .hidden{ display:none !important; }
 
   .chart-wrap{ position:relative; height:280px; }
@@ -192,7 +199,7 @@
 <div class="wrap">
 
   <h1>📊 내 포트폴리오</h1>
-  <p class="subtitle">종목을 검색해 공부하고, 실제 분산도와 위험을 확인한 뒤 리밸런싱까지 연결합니다.</p>
+  <p class="subtitle">유료 API 없이 저장된 시장 데이터로 종목을 공부하고, 실제 분산도·위험·리밸런싱까지 연결합니다.</p>
 
   <!-- ===================== 종목 검색 & 리서치 ===================== -->
   <div class="search-shell">
@@ -223,19 +230,14 @@
     <div id="researchMetrics" class="metric-grid"></div>
     <p id="researchDescription" class="description"></p>
     <div class="mini-grid" style="margin-top:14px;">
-      <div class="subpanel"><h3>실적·배당 일정</h3><div id="researchEvents" class="note" style="margin:0;">데이터 없음</div></div>
-      <div class="subpanel"><h3>ETF 구성·섹터</h3><div id="researchEtf" class="note" style="margin:0;">ETF 상세 데이터는 선택적으로 불러옵니다.</div></div>
+      <div class="subpanel"><h3>기간별 주가</h3><div id="researchPeriods" class="note" style="margin:0;">데이터 없음</div></div>
+      <div class="subpanel"><h3>애널리스트 의견</h3><div id="researchAnalyst" class="note" style="margin:0;">데이터 없음</div></div>
+      <div class="subpanel"><h3>EPS·최근 실적</h3><div id="researchEvents" class="note" style="margin:0;">데이터 없음</div></div>
+      <div class="subpanel"><h3>ETF 구성·섹터</h3><div id="researchEtf" class="note" style="margin:0;">ETF일 때 구성 정보가 표시됩니다.</div></div>
     </div>
-    <details class="manual-details" style="margin-bottom:0;">
-      <summary>ETF 구성 상세용 FMP API 키 설정</summary>
-      <div class="settings-row" style="margin-top:10px;">
-        <div class="settings-field wide"><label for="fmpApiKey">FMP API 키</label><input type="password" id="fmpApiKey" autocomplete="off" placeholder="ETF 보유종목·섹터 분석에 사용"></div>
-        <button type="button" class="btn-ghost btn-sm" onclick="toggleFmpKeyVisibility()">키 보기/숨기기</button>
-        <button type="button" class="btn-ghost btn-sm" onclick="clearFmpKey()">키 지우기</button>
-        <a class="api-link" href="https://site.financialmodelingprep.com/developer/docs" target="_blank" rel="noopener noreferrer">FMP 안내 ↗</a>
-      </div>
-      <p class="note">키는 현재 브라우저에만 저장되며 GitHub와 JSON 백업에는 포함되지 않습니다.</p>
-    </details>
+    <div class="subpanel" style="margin-top:14px;"><h3>최근 4개년 재무 추이</h3><div id="researchFinancials" class="scroll-table"><div class="empty">개별 주식 재무 데이터가 표시됩니다.</div></div></div>
+    <div id="researchSources" class="source-strip"></div>
+    <div id="researchRequest"></div>
   </div>
 
   <!-- ===================== 상단 요약 카드 ===================== -->
@@ -357,24 +359,20 @@
   <!-- ===================== 위험도 분석 & 백테스팅 ===================== -->
   <div class="card">
     <h2><span class="idx">05</span> 위험도 분석 · 백테스팅</h2>
-    <p class="card-desc">종목과 목표비중만 준비한 뒤 실행하세요. 과거 종가를 자동 조회하고 공통 거래일을 맞춰 변동성·MDD·수익률·베타를 계산합니다.</p>
+    <p class="card-desc">종목과 목표비중만 준비한 뒤 실행하세요. 저장소의 무료 가격 캐시를 읽고 공통 거래일을 맞춰 변동성·MDD·수익률·베타를 계산합니다.</p>
 
     <div class="market-panel">
       <div>
-        <label for="twelveDataApiKey">Twelve Data API 키 (최초 한 번만 입력)</label>
-        <input type="password" id="twelveDataApiKey" autocomplete="off" placeholder="무료 API 키를 붙여넣으세요">
-        <div class="market-actions">
-          <a class="api-link" href="https://twelvedata.com/pricing" target="_blank" rel="noopener noreferrer">무료 API 키 발급 ↗</a>
-          <button type="button" class="btn-ghost btn-sm" onclick="toggleApiKeyVisibility()">키 보기/숨기기</button>
-          <button type="button" class="btn-ghost btn-sm" onclick="clearApiKey()">저장된 키 지우기</button>
-        </div>
+        <label>무료 데이터 캐시</label>
+        <div id="marketCacheStatus" class="analysis-status">데이터 목록을 확인하는 중입니다…</div>
+        <div class="market-actions"><button type="button" class="btn-ghost btn-sm" onclick="refreshMarketManifest(true)">캐시 상태 새로고침</button><a class="api-link" href="https://github.com/darkdarkbin/MyQuantPlatform/actions/workflows/update-market-data.yml" target="_blank" rel="noopener noreferrer">데이터 갱신 작업 열기 ↗</a></div>
       </div>
       <div>
         <label for="benchmarkSymbol">비교지수 티커</label>
         <input type="text" id="benchmarkSymbol" value="SPY" maxlength="20" placeholder="예: SPY">
       </div>
     </div>
-    <p class="note" style="margin-top:0;">API 키는 GitHub나 백업 파일에 포함하지 않고 이 브라우저에만 저장합니다. 국내 종목은 데이터 제공 범위에 따라 자동 조회가 지원되지 않을 수 있습니다.</p>
+    <p class="note" style="margin-top:0;">유료 API 키를 사용하지 않습니다. 처음 보는 티커는 검색 결과의 ‘무료 데이터 생성 요청’을 한 번 눌러 GitHub에서 캐시를 만들면 이후 반복 조회는 제한 없이 작동합니다.</p>
 
     <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
       <div style="max-width:160px;">
@@ -385,7 +383,7 @@
         <label for="riskFreeRate">무위험수익률(연 %)</label>
         <input type="number" id="riskFreeRate" value="3" min="0" max="30" step="0.1">
       </div>
-      <button type="button" class="btn-primary" id="riskRunBtn" onclick="runRiskAnalysis()">자동 시세 조회 · 분석 실행</button>
+      <button type="button" class="btn-primary" id="riskRunBtn" onclick="runRiskAnalysis()">저장 시세로 분석 실행</button>
     </div>
     <div id="analysisStatus" class="analysis-status" role="status" aria-live="polite"></div>
 
@@ -452,7 +450,7 @@
     <p class="card-desc">ETF 내부 보유종목까지 펼쳐 실질 종목 노출, ETF 중복률, 섹터 집중도를 확인합니다.</p>
     <div class="footer-actions"><button type="button" class="btn-primary" id="xrayRunBtn" onclick="runPortfolioXray()">ETF 구성 불러오기 · 진단</button></div>
     <div id="xrayStatus" class="analysis-status" role="status" aria-live="polite"></div>
-    <div id="xrayResult" class="empty">FMP 키를 설정하고 진단을 실행하면 결과가 표시됩니다. 개별 주식은 자동으로 직접 노출 100%로 반영됩니다.</div>
+    <div id="xrayResult" class="empty">API 키 없이 저장된 ETF 상위 구성종목을 이용합니다. 개별 주식은 직접 노출 100%로 반영됩니다.</div>
   </div>
 
   <!-- ===================== 투자 일지 ===================== -->
@@ -476,10 +474,28 @@
     </div>
   </div>
 
+  <!-- ===================== 적립식·목표자산 시뮬레이션 ===================== -->
+  <div class="card">
+    <h2><span class="idx">08</span> 적립식 투자 · 목표자산 시뮬레이션</h2>
+    <p class="card-desc">실제 백테스트 수익 경로로 적립식과 일시투자를 비교하고, 같은 CAGR·변동성 가정으로 목표 도달 범위를 계산합니다.</p>
+    <div class="rebalance-controls">
+      <div><label for="monthlyContribution">월 적립금(원)</label><input id="monthlyContribution" type="number" min="0" step="10000" value="300000"></div>
+      <div><label for="goalAsset">목표자산(원)</label><input id="goalAsset" type="number" min="1" step="1000000" value="100000000"></div>
+      <div><label for="projectionYears">최대 계산기간(년)</label><input id="projectionYears" type="number" min="1" max="50" step="1" value="20"></div>
+    </div>
+    <button type="button" class="btn-primary" onclick="runPlanningSimulation()">적립식·목표 계산</button>
+    <div id="planningResult" class="empty">05번 백테스트를 먼저 실행하면 실제 가격 경로를 이용해 계산합니다.</div>
+  </div>
+
   <!-- ===================== 저장/불러오기 ===================== -->
   <div class="card">
-    <h2><span class="idx">08</span> 저장 · 불러오기</h2>
-    <p class="card-desc">입력 내용은 이 브라우저에 자동 저장됩니다. 다른 기기로 옮기거나 백업할 때는 JSON 파일을 이용하세요.</p>
+    <h2><span class="idx">09</span> 개인 보관함 · 저장</h2>
+    <p class="card-desc">보관함 키마다 포트폴리오와 메모가 분리되어 이 브라우저에 자동 저장됩니다.</p>
+    <div class="workspace-box">
+      <div><label for="workspaceKey">개인 보관함 키</label><input type="password" id="workspaceKey" autocomplete="off" placeholder="본인만 기억할 키를 입력"></div>
+      <button type="button" class="btn-primary" onclick="activateWorkspace()" style="align-self:end;">보관함 열기</button>
+      <div id="workspaceStatus" class="note" style="grid-column:1/-1;margin:0;">현재: 기본 보관함 · 이 기기와 브라우저 안에서만 작동합니다.</div>
+    </div>
     <div class="footer-actions">
       <button type="button" class="btn-ghost" onclick="exportData()">💾 JSON 백업</button>
       <label class="btn-ghost" style="display:inline-block;">
@@ -492,8 +508,8 @@
     <p class="note">
       <b>사용법:</b> 이 파일(my-portfolio.html)은 인터넷 브라우저(크롬/엣지 등)로 더블클릭해서 여는 것만으로 바로 작동합니다.
       VS Code는 파일을 보관/편집하는 용도일 뿐, 이 웹사이트 자체는 npm 설치나 서버 실행 없이 이 파일 하나로 완성되어 있습니다.<br><br>
-      <b>자동 시세 안내:</b> Twelve Data에서 과거 일별 종가를 조회합니다. 무료 호출 한도나 데이터 제공 범위 때문에 일부 종목이 실패할 수 있으며,
-      이 경우 05번의 수동 입력을 예비 방법으로 사용할 수 있습니다. 계산 결과는 투자 판단을 위한 참고 자료이며 수익을 보장하지 않습니다.
+      <b>무료 시세 안내:</b> GitHub Actions가 공개 시장 페이지의 지연 데이터를 하루 한 번 저장하고 사이트는 그 파일만 읽습니다. 공급처 구조 변경이나 일시 차단 시 기존 캐시를 유지하며,
+      일부 지표가 비어 있으면 ‘정보 없음’으로 표시합니다. 보관함 키는 서버 로그인이나 암호화 계정이 아니므로 다른 기기에서는 JSON 백업이 필요합니다. 계산 결과는 투자 판단을 위한 참고 자료이며 수익을 보장하지 않습니다.
     </p>
   </div>
 
@@ -508,9 +524,10 @@
      "파일로 저장" 버튼으로 JSON 파일을 다운로드해 보관하는 방식 사용)
 ===================================================================== */
 const STORAGE_KEY = 'myQuantPlatform.portfolio.v2';
-const API_KEY_STORAGE_KEY = 'myQuantPlatform.twelveDataApiKey';
-const FMP_KEY_STORAGE_KEY = 'myQuantPlatform.fmpApiKey';
-const DATA_VERSION = 4;
+const ACTIVE_WORKSPACE_KEY = 'myQuantPlatform.activeWorkspace.v1';
+const DATA_VERSION = 5;
+const CACHE_SCHEMA_VERSION = 2;
+const REPOSITORY_URL = 'https://github.com/darkdarkbin/MyQuantPlatform';
 let holdings = [];
 let benchmarkDates = [];
 let lastBacktestSeries = [];
@@ -522,6 +539,12 @@ let xrayCache = {};
 let idSeq = 1;
 let editingId = null;
 let toastTimer = null;
+let activeWorkspaceId = 'default';
+let activeWorkspaceLabel = '기본 보관함';
+let marketCatalog = null;
+let marketCatalogPromise = null;
+let marketManifest = null;
+const snapshotMemory = new Map();
 
 function finiteNumber(value, fallback=0){
   const n = Number(value);
@@ -668,21 +691,58 @@ function normalizeHolding(raw, fallbackId){
 
 let lastSearchResults = [];
 
-function getTwelveKey(){
-  return document.getElementById('twelveDataApiKey')?.value.trim() || localStorage.getItem(API_KEY_STORAGE_KEY) || '';
+function staticDataUrl(path,force=false){
+  const url=new URL(path,window.location.href);
+  if(force) url.searchParams.set('v',Date.now().toString());
+  else url.searchParams.set('v',new Date().toISOString().slice(0,10));
+  return url;
 }
 
-function getFmpKey(){
-  return document.getElementById('fmpApiKey')?.value.trim() || localStorage.getItem(FMP_KEY_STORAGE_KEY) || '';
-}
-
-async function fetchJson(url){
-  const response = await fetch(url.toString(),{headers:{Accept:'application/json'}});
+async function fetchJson(url,options={}){
+  const response = await fetch(url.toString(),{headers:{Accept:'application/json'},cache:options.force?'no-store':'default'});
   let payload;
   try{ payload=await response.json(); }
   catch(error){ throw new Error('데이터 서버 응답을 읽지 못했습니다.'); }
-  if(!response.ok || payload?.status==='error' || payload?.code>=400) throw new Error(payload?.message || `데이터 서버 오류 (${response.status})`);
+  if(!response.ok){
+    const error=new Error(response.status===404?'저장된 데이터가 아직 없습니다.':`데이터 파일 오류 (${response.status})`);
+    error.code=response.status===404?'CACHE_MISS':'FETCH_ERROR';
+    throw error;
+  }
   return payload;
+}
+
+async function loadMarketCatalog(force=false){
+  if(marketCatalog && !force) return marketCatalog;
+  if(marketCatalogPromise && !force) return marketCatalogPromise;
+  marketCatalogPromise=fetchJson(staticDataUrl('data/catalog.json',force),{force}).then(payload=>{
+    if(payload?.schemaVersion!==CACHE_SCHEMA_VERSION || !Array.isArray(payload.items)) throw new Error('종목 목록 형식이 올바르지 않습니다.');
+    marketCatalog=payload;
+    return payload;
+  }).finally(()=>{ marketCatalogPromise=null; });
+  return marketCatalogPromise;
+}
+
+async function loadMarketSnapshot(symbol,force=false){
+  const normalized=normalizedMarketSymbol(symbol);
+  if(snapshotMemory.has(normalized) && !force) return snapshotMemory.get(normalized);
+  const payload=await fetchJson(staticDataUrl(`data/market/${encodeURIComponent(normalized)}.json`,force),{force});
+  if(payload?.schemaVersion!==CACHE_SCHEMA_VERSION || payload?.symbol!==normalized || !payload?.history?.dates?.length){
+    throw new Error(`${normalized} 데이터 파일이 손상되었거나 비어 있습니다.`);
+  }
+  snapshotMemory.set(normalized,payload);
+  return payload;
+}
+
+function dataRequestUrl(symbol){
+  const title=`[data] ${normalizedMarketSymbol(symbol)}`;
+  const body='MyQuantPlatform에서 사용할 무료 시장 데이터 파일을 생성해 주세요. 이 요청은 저장소 소유자만 실행할 수 있습니다.';
+  return `${REPOSITORY_URL}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+}
+
+function renderDataRequest(symbol,targetId='researchRequest'){
+  const target=document.getElementById(targetId);
+  if(!target) return;
+  target.innerHTML=`<div class="data-request"><span><b>${escapeHtml(symbol)}</b>은 아직 무료 캐시에 없습니다. 최초 한 번만 생성하면 이후 제한 없이 조회됩니다.</span><a class="btn-primary btn-sm" style="text-decoration:none;" href="${escapeHtml(dataRequestUrl(symbol))}" target="_blank" rel="noopener noreferrer">무료 데이터 생성 요청</a><button type="button" class="btn-ghost btn-sm" onclick="retryResearch('${escapeHtml(symbol)}')">생성 후 다시 확인</button></div>`;
 }
 
 async function searchSymbols(){
@@ -690,20 +750,31 @@ async function searchSymbols(){
   const status = document.getElementById('searchStatus');
   const resultsEl = document.getElementById('searchResults');
   if(query.length<1){ status.textContent='검색어를 입력해 주세요.'; return; }
-  const key=getTwelveKey();
-  if(!key){ status.textContent='05번에서 Twelve Data API 키를 먼저 입력해 주세요.'; status.className='analysis-status error'; return; }
   document.getElementById('searchBtn').disabled=true;
-  status.textContent='종목을 검색하는 중입니다…'; status.className='analysis-status loading';
+  status.textContent='무료 종목 목록에서 검색하는 중입니다…'; status.className='analysis-status loading';
   try{
-    const url=new URL('https://api.twelvedata.com/symbol_search');
-    url.searchParams.set('symbol',query); url.searchParams.set('outputsize','10'); url.searchParams.set('apikey',key);
-    const payload=await fetchJson(url);
-    lastSearchResults=(Array.isArray(payload.data)?payload.data:[]).filter(item=>item?.symbol).slice(0,10);
-    if(!lastSearchResults.length){ resultsEl.classList.add('hidden'); status.textContent='검색 결과가 없습니다.'; return; }
-    resultsEl.innerHTML=lastSearchResults.map((item,index)=>`<button type="button" class="search-result" onclick="selectSearchResult(${index})"><span><b>${escapeHtml(item.symbol)}</b> · ${escapeHtml(item.instrument_name || '')}<br><small>${escapeHtml(item.instrument_type || '')}</small></span><small>${escapeHtml(item.exchange || '')} · ${escapeHtml(item.currency || '')}</small></button>`).join('');
-    resultsEl.classList.remove('hidden'); status.textContent=`${lastSearchResults.length}개 결과`;
+    const catalog=await loadMarketCatalog();
+    const needle=query.toUpperCase();
+    const tokens=needle.split(/\s+/).filter(Boolean);
+    const candidates=catalog.items.filter(item=>{
+      const haystack=`${item.symbol} ${item.name} ${item.sector || ''} ${item.industry || ''}`.toUpperCase();
+      return tokens.every(token=>haystack.includes(token));
+    }).sort((a,b)=>{
+      const aExact=a.symbol===needle?0:a.symbol.startsWith(needle)?1:2;
+      const bExact=b.symbol===needle?0:b.symbol.startsWith(needle)?1:2;
+      return aExact-bExact || finiteNumber(b.marketCap)-finiteNumber(a.marketCap);
+    }).slice(0,12);
+    lastSearchResults=candidates.map(item=>({
+      symbol:item.symbol,instrument_name:item.name,instrument_type:item.type,exchange:item.exchange || 'US',currency:item.currency || 'USD',country:item.country || '',sector:item.sector || '',industry:item.industry || '',price:item.price
+    }));
+    if(!lastSearchResults.length && /^[A-Z0-9][A-Z0-9.\-^]{0,19}$/.test(needle)){
+      lastSearchResults=[{symbol:needle,instrument_name:'캐시 생성 후 확인',instrument_type:'UNKNOWN',exchange:'',currency:'USD'}];
+    }
+    if(!lastSearchResults.length){ resultsEl.classList.add('hidden'); status.textContent='검색 결과가 없습니다. 미국 상장 티커 또는 회사명을 확인해 주세요.'; return; }
+    resultsEl.innerHTML=lastSearchResults.map((item,index)=>`<button type="button" class="search-result" onclick="selectSearchResult(${index})"><span><b>${escapeHtml(item.symbol)}</b> · ${escapeHtml(item.instrument_name || '')}<br><small>${escapeHtml(item.instrument_type || '')}${item.sector?` · ${escapeHtml(item.sector)}`:''}</small></span><small>${escapeHtml(item.exchange || '')} · ${escapeHtml(item.currency || '')}</small></button>`).join('');
+    resultsEl.classList.remove('hidden'); status.textContent=`${lastSearchResults.length}개 결과 · API 호출 0회`;
     status.className='analysis-status success';
-  }catch(error){ resultsEl.classList.add('hidden'); status.textContent=friendlyMarketError(error); status.className='analysis-status error'; }
+  }catch(error){ resultsEl.classList.add('hidden'); status.textContent='종목 목록을 읽지 못했습니다. GitHub Pages 배포가 완료됐는지 확인해 주세요.'; status.className='analysis-status error'; }
   finally{ document.getElementById('searchBtn').disabled=false; }
 }
 
@@ -711,7 +782,7 @@ async function selectSearchResult(index){
   const item=lastSearchResults[index];
   if(!item) return;
   document.getElementById('searchResults').classList.add('hidden');
-  currentResearch={symbol:String(item.symbol).toUpperCase(),name:item.instrument_name || item.symbol,currency:item.currency || 'USD',exchange:item.exchange || '',instrumentType:item.instrument_type || '',country:item.country || ''};
+  currentResearch={symbol:String(item.symbol).toUpperCase(),name:item.instrument_name || item.symbol,currency:item.currency || 'USD',exchange:item.exchange || '',instrumentType:item.instrument_type || '',country:item.country || '',sector:item.sector || '',industry:item.industry || '',price:item.price};
   document.getElementById('researchPanel').classList.add('open');
   document.getElementById('researchSymbol').textContent=currentResearch.symbol;
   document.getElementById('researchName').textContent=`${currentResearch.name} · ${currentResearch.exchange} · ${currentResearch.instrumentType}`;
@@ -739,132 +810,129 @@ function fmtRatio(value,multiplier=1,suffix=''){
   return Number.isFinite(number) ? (number*multiplier).toLocaleString('ko-KR',{maximumFractionDigits:2})+suffix : '-';
 }
 
-async function fetchTwelveResearch(endpoint,symbol,key){
-  const url=new URL(`https://api.twelvedata.com/${endpoint}`);
-  url.searchParams.set('symbol',symbol); url.searchParams.set('apikey',key);
-  return fetchJson(url);
+function fmtResearchValue(value,kind='number'){
+  const number=finiteNumber(value,NaN);
+  if(!Number.isFinite(number)) return '-';
+  if(kind==='money') return fmtCompact(number,'USD');
+  if(kind==='price') return `$${number.toLocaleString('en-US',{maximumFractionDigits:2})}`;
+  if(kind==='percent') return `${(number*100).toLocaleString('ko-KR',{maximumFractionDigits:2})}%`;
+  return number.toLocaleString('ko-KR',{maximumFractionDigits:2});
 }
 
-async function fetchFmp(endpoint,params,key){
-  const url=new URL(`https://financialmodelingprep.com/stable/${endpoint}`);
-  Object.entries(params).forEach(([name,value])=>url.searchParams.set(name,value));
-  url.searchParams.set('apikey',key);
-  return fetchJson(url);
-}
-
-function normalizeEtfHoldings(payload){
-  const rows=Array.isArray(payload)?payload:(Array.isArray(payload?.holdings)?payload.holdings:[]);
-  return rows.map(item=>{
-    const symbol=String(item.asset || item.symbol || item.ticker || '').trim().toUpperCase();
-    let weight;
-    if(item.weightPercentage!==undefined) weight=finiteNumber(String(item.weightPercentage).replace('%',''),0);
-    else{
-      weight=finiteNumber(item.weight ?? item.weighting ?? item.percent,0);
-      if(weight>0 && weight<=1) weight*=100;
-    }
-    return {symbol,name:String(item.name || item.assetName || symbol),weight:Math.max(0,Math.min(100,weight))};
-  }).filter(item=>item.symbol && item.weight>0).sort((a,b)=>b.weight-a.weight).slice(0,150);
-}
-
-function normalizeWeights(payload){
-  const rows=Array.isArray(payload)?payload:[];
-  return rows.map(item=>{
-    const name=String(item.sector || item.country || item.name || item.assetClass || '기타');
-    let weight=finiteNumber(String(item.weightPercentage ?? item.weight ?? item.percentage ?? 0).replace('%',''),0);
-    if(weight>0 && weight<=1 && item.weightPercentage===undefined) weight*=100;
-    return {name,weight};
-  }).filter(item=>item.weight>0).sort((a,b)=>b.weight-a.weight);
-}
-
-async function loadEtfDetails(symbol){
-  const key=getFmpKey();
-  if(!key) return null;
-  const [infoResult,holdingsResult,sectorsResult,countriesResult]=await Promise.allSettled([
-    fetchFmp('etf/info',{symbol},key),fetchFmp('etf/holdings',{symbol},key),fetchFmp('etf/sector-weightings',{symbol},key),fetchFmp('etf/country-weightings',{symbol},key)
-  ]);
-  const infoPayload=infoResult.status==='fulfilled'?infoResult.value:[];
-  const info=Array.isArray(infoPayload)?(infoPayload[0]||{}):infoPayload;
-  const holdings=holdingsResult.status==='fulfilled'?normalizeEtfHoldings(holdingsResult.value):[];
-  const sectors=sectorsResult.status==='fulfilled'?normalizeWeights(sectorsResult.value):[];
-  const countries=countriesResult.status==='fulfilled'?normalizeWeights(countriesResult.value):[];
-  if(!holdings.length && !Object.keys(info || {}).length) return null;
-  const detail={info:info||{},holdings,sectors,countries,fetchedAt:new Date().toISOString()};
-  xrayCache[symbol]=detail;
-  return detail;
-}
-
-function renderResearchMetrics(profile,statistics){
-  const stats=statistics?.statistics || statistics || {};
-  const currency=profile?.currency || currentResearch?.currency || 'USD';
-  const metrics=[
-    ['시가총액',fmtCompact(deepValue(stats,['valuations_metrics.market_capitalization','market_cap']),currency)],
-    ['PER',fmtRatio(deepValue(stats,['valuations_metrics.trailing_pe','valuations_metrics.forward_pe','pe_ratio']))],
-    ['PBR',fmtRatio(deepValue(stats,['valuations_metrics.price_to_book_mrq','price_to_book']))],
-    ['영업이익률',fmtRatio(deepValue(stats,['financials.operating_margin','profitability.operating_margin']),100,'%')],
-    ['순이익률',fmtRatio(deepValue(stats,['financials.profit_margin','profitability.profit_margin']),100,'%')],
-    ['ROE',fmtRatio(deepValue(stats,['financials.return_on_equity_ttm','profitability.return_on_equity']),100,'%')],
-    ['52주 고가',fmtRatio(deepValue(stats,['stock_statistics.fifty_two_week.high','fifty_two_week.high']))],
-    ['52주 저가',fmtRatio(deepValue(stats,['stock_statistics.fifty_two_week.low','fifty_two_week.low']))]
+function renderResearchMetrics(snapshot){
+  const quote=snapshot.quote || {}, valuation=snapshot.valuation || {}, profitability=snapshot.profitability || {}, health=snapshot.financialHealth || {};
+  const stockMetrics=[
+    ['현재가',fmtResearchValue(quote.price,'price')],['시가총액',fmtResearchValue(quote.marketCap,'money')],
+    ['PER (최근 4분기 EPS)',fmtResearchValue(valuation.pe)],['PBR (최근 연차)',fmtResearchValue(valuation.pbr)],['PSR (최근 연차)',fmtResearchValue(valuation.psr)],
+    ['EPS (최근 4분기)',fmtResearchValue(snapshot.earnings?.trailingEps,'price')],['ROE',fmtResearchValue(profitability.roe,'percent')],
+    ['영업이익률',fmtResearchValue(profitability.operatingMargin,'percent')],['순이익률',fmtResearchValue(profitability.netMargin,'percent')],
+    ['총부채',fmtResearchValue(health.totalDebt,'money')],['현금·단기투자',fmtResearchValue(health.totalCash,'money')],['잉여현금흐름',fmtResearchValue(health.freeCashFlow,'money')],
+    ['52주 최고가',fmtResearchValue(quote.high52,'price')],['52주 최저가',fmtResearchValue(quote.low52,'price')],['거래량',fmtResearchValue(quote.volume)],['배당수익률',fmtResearchValue(quote.dividendYield,'percent')]
   ];
+  const etfMetrics=[
+    ['현재가',fmtResearchValue(quote.price,'price')],['AUM',fmtResearchValue(snapshot.etf?.aum,'money')],['총보수',fmtResearchValue(snapshot.etf?.expenseRatio,'percent')],['배당수익률',fmtResearchValue(snapshot.etf?.yield,'percent')],
+    ['베타',fmtResearchValue(quote.beta)],['시가총액',fmtResearchValue(quote.marketCap,'money')],['52주 최고가',fmtResearchValue(quote.high52,'price')],['52주 최저가',fmtResearchValue(quote.low52,'price')],
+    ['거래량',fmtResearchValue(quote.volume)],['평균 거래량',fmtResearchValue(quote.averageVolume)],['1개월 수익률',fmtResearchValue(snapshot.periods?.['1m']?.return,'percent')],['3개월 수익률',fmtResearchValue(snapshot.periods?.['3m']?.return,'percent')],['6개월 수익률',fmtResearchValue(snapshot.periods?.['6m']?.return,'percent')],['1년 수익률',fmtResearchValue(snapshot.periods?.['1y']?.return,'percent')]
+  ];
+  const metrics=snapshot.type==='ETF'?etfMetrics:stockMetrics;
   document.getElementById('researchMetrics').innerHTML=metrics.map(([key,value])=>`<div class="metric"><div class="k">${key}</div><div class="v">${escapeHtml(value)}</div></div>`).join('');
 }
 
-function renderResearchEvents(dividends,earnings){
-  const divs=(Array.isArray(dividends?.dividends)?dividends.dividends:[]).slice(0,3);
-  const earns=(Array.isArray(earnings?.earnings)?earnings.earnings:[]).slice(0,3);
-  const parts=[];
-  if(earns.length) parts.push(`<b>실적</b><br>${earns.map(item=>`${escapeHtml(item.date || '-')} · EPS ${escapeHtml(item.eps_actual ?? item.eps_estimate ?? '-')}`).join('<br>')}`);
-  if(divs.length) parts.push(`<b>배당</b><br>${divs.map(item=>`${escapeHtml(item.ex_date || item.date || '-')} · ${escapeHtml(item.amount ?? '-')}`).join('<br>')}`);
-  document.getElementById('researchEvents').innerHTML=parts.join('<br><br>') || '제공되는 일정 데이터가 없습니다.';
+function renderResearchPeriods(snapshot){
+  const labels={"1m":"1개월","3m":"3개월","6m":"6개월","1y":"1년"};
+  document.getElementById('researchPeriods').innerHTML=Object.entries(labels).map(([key,label])=>{
+    const item=snapshot.periods?.[key];
+    if(!item) return `${label}: 정보 없음`;
+    const value=finiteNumber(item.return,NaN);
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;"><span>${label}</span><b class="${value>=0?'pos':'neg'}">${Number.isFinite(value)?(value*100).toFixed(1)+'%':'-'}</b></div><small>최고 ${escapeHtml(fmtResearchValue(item.high,'price'))} · 최저 ${escapeHtml(fmtResearchValue(item.low,'price'))}</small>`;
+  }).join('');
+}
+
+function renderResearchAnalyst(snapshot){
+  const item=snapshot.analyst || {}, current=finiteNumber(snapshot.quote?.price,NaN), target=finiteNumber(item.targetMean,NaN);
+  if(!Number.isFinite(target)){
+    document.getElementById('researchAnalyst').innerHTML='제공되는 애널리스트 목표가가 없습니다. ETF에서는 목표가가 없는 것이 정상입니다.';
+    return;
+  }
+  const upside=Number.isFinite(current)&&current>0?(target/current-1)*100:NaN;
+  document.getElementById('researchAnalyst').innerHTML=`평균 목표가 <b>${escapeHtml(fmtResearchValue(target,'price'))}</b> ${Number.isFinite(upside)?`<span class="${upside>=0?'pos':'neg'}">(${upside>=0?'+':''}${upside.toFixed(1)}%)</span>`:''}<br>범위 ${escapeHtml(fmtResearchValue(item.targetLow,'price'))} ~ ${escapeHtml(fmtResearchValue(item.targetHigh,'price'))}<br>매수 ${finiteNumber(item.buy)} · 보유 ${finiteNumber(item.hold)} · 매도 ${finiteNumber(item.sell)} · 총 ${finiteNumber(item.count)}명<div class="note">애널리스트 의견은 사실이 아닌 전망이며, 발표 시점과 방법이 서로 다를 수 있습니다.</div>`;
+}
+
+function renderResearchEvents(snapshot){
+  const quarters=snapshot.earnings?.quarters || [];
+  document.getElementById('researchEvents').innerHTML=quarters.length?quarters.slice().reverse().map(item=>`${escapeHtml(item.period || '-')} · 실제 EPS <b>${escapeHtml(item.earnings ?? '-')}</b> · 예상 ${escapeHtml(item.consensus ?? '-')}`).join('<br>'):'ETF이거나 최근 분기 EPS가 제공되지 않았습니다.';
+}
+
+function renderResearchFinancials(snapshot){
+  const years=snapshot.financials?.years || [];
+  const el=document.getElementById('researchFinancials');
+  if(!years.length){ el.innerHTML='<div class="empty">ETF에는 기업 재무제표가 없습니다.</div>'; return; }
+  const headers=years.map(year=>`<th>${escapeHtml(year.date)}</th>`).join('');
+  const rows=[['매출','revenue','money'],['영업이익','operatingIncome','money'],['순이익','netIncome','money'],['영업이익률','operatingMargin','percent'],['ROE','roe','percent'],['현금·단기투자','totalCash','money'],['총부채','totalDebt','money'],['잉여현금흐름','freeCashFlow','money']].map(([label,key,kind])=>`<tr><th>${label}</th>${years.map(year=>`<td>${escapeHtml(fmtResearchValue(year[key],kind))}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>항목</th>${headers}</tr></thead><tbody>${rows}</tbody></table><div class="note">재무 수치는 최근 연차 보고 기준이며, PER은 최근 제공된 4개 분기 EPS 합계를 사용합니다.</div>`;
+}
+
+function snapshotToEtfDetail(snapshot){
+  if(snapshot.type!=='ETF' || !snapshot.etf) return null;
+  return {info:{expenseRatio:snapshot.etf.expenseRatio,aum:snapshot.etf.aum},holdings:(snapshot.etf.topHoldings || []).map(item=>({...item,weight:finiteNumber(item.weight)})),sectors:(snapshot.etf.sectorWeights || []).map(item=>({...item,weight:finiteNumber(item.weight)})),countries:[],coverage:finiteNumber(snapshot.etf.holdingsCoverage),fetchedAt:snapshot.updatedAt};
+}
+
+async function loadEtfDetails(symbol){
+  const snapshot=await loadMarketSnapshot(symbol);
+  const detail=snapshotToEtfDetail(snapshot);
+  if(detail) xrayCache[symbol]=detail;
+  return detail;
 }
 
 function renderResearchEtf(detail){
   const el=document.getElementById('researchEtf');
-  if(!detail){ el.innerHTML=getFmpKey()?'ETF 상세 데이터를 받지 못했습니다. 요금제·티커를 확인해 주세요.':'FMP 키를 설정하면 보유종목·섹터·국가 비중을 확인할 수 있습니다.'; return; }
+  if(!detail){ el.innerHTML='개별 주식입니다. ETF 구성 분석 대상이 아닙니다.'; return; }
   const info=detail.info || {};
   const expense=deepValue(info,['expenseRatio','expense_ratio']);
   const aum=deepValue(info,['aum','assetsUnderManagement','assetUnderManagement']);
   const top=detail.holdings.slice(0,10);
-  el.innerHTML=`${expense!==null?`총보수 ${escapeHtml(fmtRatio(expense,expense<=1?100:1,'%'))}<br>`:''}${aum!==null?`운용자산 ${escapeHtml(fmtCompact(aum,'USD'))}<br>`:''}
+  el.innerHTML=`${expense!==null?`총보수 ${escapeHtml(fmtRatio(expense,100,'%'))}<br>`:''}${aum!==null?`운용자산 ${escapeHtml(fmtCompact(aum,'USD'))}<br>`:''}
     ${top.length?`<br><b>상위 보유종목</b><br>${top.map(item=>`${escapeHtml(item.symbol)} ${item.weight.toFixed(2)}%`).join(' · ')}`:''}
-    ${detail.sectors.length?`<br><br><b>상위 섹터</b><br>${detail.sectors.slice(0,6).map(item=>`${escapeHtml(item.name)} ${item.weight.toFixed(1)}%`).join(' · ')}`:''}`;
+    ${detail.sectors.length?`<br><br><b>상위 섹터(상위 종목 기준)</b><br>${detail.sectors.slice(0,6).map(item=>`${escapeHtml(item.name)} ${item.weight.toFixed(1)}%`).join(' · ')}`:''}
+    <div class="note">표시 구성의 합계 ${finiteNumber(detail.coverage).toFixed(1)}%. 전체 보유종목이 아닌 공개된 상위 구성 기준입니다.</div>`;
 }
 
-async function loadResearch(symbol){
-  const key=getTwelveKey();
+async function loadResearch(symbol,force=false){
   const loading=document.getElementById('researchLoading');
-  if(!key){ loading.textContent='05번에서 Twelve Data API 키를 먼저 입력해 주세요.'; loading.className='analysis-status error'; return; }
-  loading.textContent='기업·ETF 정보를 불러오는 중입니다…'; loading.className='analysis-status loading';
-  const results=await Promise.allSettled(['profile','statistics','dividends','earnings'].map(endpoint=>fetchTwelveResearch(endpoint,symbol,key)));
-  const [profile,statistics,dividends,earnings]=results.map(result=>result.status==='fulfilled'?result.value:null);
-  if(profile){
-    currentResearch={...currentResearch,...profile,symbol:String(profile.symbol || symbol).toUpperCase(),name:profile.name || currentResearch?.name || symbol,currency:profile.currency || currentResearch?.currency || 'USD'};
-    document.getElementById('researchName').textContent=`${currentResearch.name} · ${profile.exchange || currentResearch.exchange || ''} · ${profile.sector || currentResearch.instrumentType || ''}`;
+  document.getElementById('researchRequest').innerHTML='';
+  loading.textContent='무료 저장 데이터에서 리서치 정보를 불러오는 중입니다…'; loading.className='analysis-status loading';
+  try{
+    const snapshot=await loadMarketSnapshot(symbol,force);
+    currentResearch={...currentResearch,symbol:snapshot.symbol,name:snapshot.name,currency:snapshot.currency || 'USD',exchange:snapshot.exchange || '',instrumentType:snapshot.type,sector:snapshot.sector || '',industry:snapshot.industry || '',price:snapshot.quote?.price,snapshot};
+    document.getElementById('researchName').textContent=`${snapshot.name} · ${snapshot.exchange || 'US'} · ${snapshot.type}${snapshot.sector?` · ${snapshot.sector}`:''}`;
+    renderResearchMetrics(snapshot);
+    const intro=snapshot.type==='ETF'?`${snapshot.name}는 ${snapshot.symbol} 티커로 거래되는 ETF입니다. 아래 보유종목·보수·AUM과 운용사 공식 정보를 함께 확인하세요.`:`${snapshot.name}는 ${snapshot.sector || '미분류'} 섹터의 ${snapshot.industry || '산업 미분류'} 기업입니다.`;
+    document.getElementById('researchDescription').textContent=`${intro}${snapshot.description?` ${snapshot.description}`:''}`;
+    renderResearchPeriods(snapshot); renderResearchAnalyst(snapshot); renderResearchEvents(snapshot); renderResearchFinancials(snapshot);
+    const detail=snapshotToEtfDetail(snapshot); if(detail) xrayCache[symbol]=detail;
+    renderResearchEtf(detail);
+    document.getElementById('researchSources').innerHTML=`<span class="freshness">기준 ${escapeHtml(snapshot.dataDate || '-')} · 저장 ${escapeHtml(String(snapshot.updatedAt || '').slice(0,10))}</span>${(snapshot.sources || []).map(source=>`<a class="source-pill" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.name)} ↗</a>`).join('')}`;
+    loading.textContent='리서치 정보 불러오기 완료 · 유료 API 호출 0회'; loading.className='analysis-status success';
+  }catch(error){
+    ['researchMetrics','researchPeriods','researchAnalyst','researchEvents','researchFinancials','researchEtf','researchSources'].forEach(id=>document.getElementById(id).innerHTML='');
+    document.getElementById('researchDescription').textContent='아직 이 티커의 상세 데이터 파일이 없습니다.';
+    loading.textContent=error.code==='CACHE_MISS'?'최초 데이터 생성이 필요합니다.':'저장 데이터를 읽지 못했습니다.'; loading.className='analysis-status error';
+    renderDataRequest(symbol);
   }
-  renderResearchMetrics(profile || {},statistics || {});
-  document.getElementById('researchDescription').textContent=profile?.description || '기업 설명 데이터가 제공되지 않았습니다.';
-  renderResearchEvents(dividends,earnings);
-  const type=String(currentResearch?.instrumentType || '').toLowerCase();
-  const likelyEtf=type.includes('etf') || type.includes('exchange-traded') || /fund/i.test(type);
-  const detail=likelyEtf ? await loadEtfDetails(symbol).catch(()=>null) : null;
-  if(likelyEtf) renderResearchEtf(detail);
-  else document.getElementById('researchEtf').textContent='개별 주식입니다. ETF 구성 분석 대상이 아닙니다.';
-  loading.textContent=results.some(result=>result.status==='fulfilled')?'리서치 정보 불러오기 완료':'리서치 정보를 받지 못했습니다.';
-  loading.className=`analysis-status ${results.some(result=>result.status==='fulfilled')?'success':'error'}`;
 }
+
+async function retryResearch(symbol){ snapshotMemory.delete(symbol); await loadResearch(symbol,true); }
 
 function useResearchInForm(){
   if(!currentResearch) return;
   document.getElementById('fSymbol').value=currentResearch.symbol;
   document.getElementById('fName').value=currentResearch.name || '';
   document.getElementById('fCurrency').value=currentResearch.currency==='KRW'?'KRW':'USD';
+  if(Number.isFinite(finiteNumber(currentResearch.price,NaN))) document.getElementById('fCurPrice').value=finiteNumber(currentResearch.price);
   updateCurrencyLabels();
   document.getElementById('fWeight').focus();
   document.getElementById('fWeight').scrollIntoView({behavior:'smooth',block:'center'});
 }
-
-function toggleFmpKeyVisibility(){ const input=document.getElementById('fmpApiKey'); input.type=input.type==='password'?'text':'password'; }
-function clearFmpKey(){ localStorage.removeItem(FMP_KEY_STORAGE_KEY); document.getElementById('fmpApiKey').value=''; showToast('저장된 FMP 키를 지웠습니다.'); }
 
 /* =====================================================================
    1. 종목 추가/삭제
@@ -1401,15 +1469,18 @@ function setAnalysisStatus(message='', type=''){
   el.className = `analysis-status ${type}`.trim();
 }
 
-function toggleApiKeyVisibility(){
-  const input = document.getElementById('twelveDataApiKey');
-  input.type = input.type === 'password' ? 'text' : 'password';
-}
-
-function clearApiKey(){
-  localStorage.removeItem(API_KEY_STORAGE_KEY);
-  document.getElementById('twelveDataApiKey').value = '';
-  setAnalysisStatus('이 브라우저에 저장된 API 키를 지웠습니다.');
+async function refreshMarketManifest(force=false){
+  const el=document.getElementById('marketCacheStatus');
+  if(!el) return;
+  el.textContent='무료 데이터 목록을 확인하는 중입니다…'; el.className='analysis-status loading';
+  try{
+    marketManifest=await fetchJson(staticDataUrl('data/manifest.json',force),{force});
+    const newest=(marketManifest.symbols || []).map(item=>item.dataDate).filter(Boolean).sort().at(-1) || '-';
+    el.textContent=`저장된 상세 티커 ${finiteNumber(marketManifest.count)}개 · 최신 가격 기준 ${newest} · 조회 제한 없음`;
+    el.className='analysis-status success';
+  }catch(error){
+    el.textContent='데이터 목록을 읽지 못했습니다. GitHub Pages가 새 버전으로 배포됐는지 확인해 주세요.'; el.className='analysis-status error';
+  }
 }
 
 function getRequestedYears(){
@@ -1432,83 +1503,38 @@ function hasRequestedCoverage(h, range=getRequestedDateRange()){
 }
 
 function normalizedMarketSymbol(value){
-  const symbol = String(value || '').trim().toUpperCase();
-  if(!symbol || !/^[A-Z0-9.^:/_=-]+$/.test(symbol)) throw new Error(`지원하지 않는 티커 형식입니다: ${symbol || '(빈 값)'}`);
+  const symbol = String(value || '').trim().toUpperCase().replace('/','-');
+  if(!symbol || !/^[A-Z0-9][A-Z0-9.^-]{0,19}$/.test(symbol)) throw new Error(`지원하지 않는 티커 형식입니다: ${symbol || '(빈 값)'}`);
   return symbol;
 }
 
-function payloadForSymbol(payload, symbol, count){
-  if(count===1 && payload?.values) return payload;
-  if(payload?.[symbol]) return payload[symbol];
-  const found = Object.entries(payload || {}).find(([key,value])=>
-    value && typeof value==='object' && key.toUpperCase()===symbol.toUpperCase()
-  );
-  return found?.[1] || null;
-}
-
-function parseMarketSeries(data, symbol){
-  if(!data || data.status==='error' || data.code){
-    throw new Error(data?.message || `${symbol} 데이터를 받지 못했습니다.`);
-  }
-  if(!Array.isArray(data.values)) throw new Error(`${symbol}의 일별 종가가 없습니다.`);
-
-  const rows = data.values
-    .map(row=>({date:String(row.datetime || '').slice(0,10), close:finiteNumber(row.close,NaN)}))
-    .filter(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date) && Number.isFinite(row.close) && row.close>0)
-    .sort((a,b)=>a.date.localeCompare(b.date));
-  const byDate = new Map(rows.map(row=>[row.date,row.close]));
-  const dates = [...byDate.keys()].sort();
-  if(dates.length<3) throw new Error(`${symbol}의 사용 가능한 가격이 3개 미만입니다.`);
-
-  return {
-    symbol,
-    dates,
-    prices: dates.map(date=>byDate.get(date)),
-    currency: String(data.meta?.currency || '').toUpperCase()
-  };
-}
-
-async function fetchAutomaticSeries(symbols, apiKey, range){
-  const url = new URL('https://api.twelvedata.com/time_series');
-  url.searchParams.set('symbol',symbols.join(','));
-  url.searchParams.set('interval','1day');
-  url.searchParams.set('start_date',range.start);
-  url.searchParams.set('end_date',range.end);
-  url.searchParams.set('outputsize','5000');
-  url.searchParams.set('order','ASC');
-  url.searchParams.set('format','JSON');
-  url.searchParams.set('apikey',apiKey);
-
-  const response = await fetch(url.toString(),{headers:{Accept:'application/json'}});
-  let payload;
-  try{ payload = await response.json(); }
-  catch(err){ throw new Error('시세 서버 응답을 읽지 못했습니다.'); }
-  if(!response.ok || payload?.status==='error') throw new Error(payload?.message || `시세 서버 오류 (${response.status})`);
-
+async function fetchAutomaticSeries(symbols, range){
   const series = new Map();
   const errors = [];
-  symbols.forEach(symbol=>{
+  await Promise.all(symbols.map(async rawSymbol=>{
+    const symbol=normalizedMarketSymbol(rawSymbol);
     try{
-      const item = payloadForSymbol(payload,symbol,symbols.length);
-      series.set(symbol,parseMarketSeries(item,symbol));
-    }catch(err){ errors.push(`${symbol}: ${err.message}`); }
-  });
+      const snapshot=await loadMarketSnapshot(symbol);
+      const dates=[], prices=[];
+      snapshot.history.dates.forEach((date,index)=>{
+        const close=finiteNumber(snapshot.history.close[index],NaN);
+        if(date>=range.start && date<=range.end && Number.isFinite(close) && close>0){ dates.push(date); prices.push(close); }
+      });
+      if(dates.length<3) throw new Error(`${range.years}년 구간의 가격이 부족합니다.`);
+      series.set(symbol,{symbol,dates,prices,currency:snapshot.currency || 'USD',snapshot});
+    }catch(error){ errors.push(`${symbol}: ${error.code==='CACHE_MISS'?'무료 데이터 생성 필요':error.message}`); }
+  }));
   return {series,errors};
 }
 
 function friendlyMarketError(error){
   const message = String(error?.message || error || '알 수 없는 오류');
-  if(/api.?key|apikey|401|unauthorized|invalid key/i.test(message)) return 'API 키를 확인해 주세요. 무료 키를 발급한 뒤 다시 실행하면 됩니다.';
-  if(/credit|limit|429|too many/i.test(message)) return '무료 API 호출 한도에 도달했습니다. 잠시 후 다시 실행해 주세요.';
-  if(/failed to fetch|network|cors/i.test(message)) return '시세 서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 실행해 주세요.';
+  if(/생성 필요|CACHE_MISS|저장된 데이터가 아직/i.test(message)) return `${message} · 검색창에서 해당 티커의 무료 데이터 생성을 요청해 주세요.`;
+  if(/failed to fetch|network|cors/i.test(message)) return 'GitHub의 저장 데이터에 연결하지 못했습니다. 인터넷 연결과 Pages 배포 상태를 확인해 주세요.';
   return message.length>220 ? message.slice(0,220)+'…' : message;
 }
 
 async function loadAutomaticMarketData(){
-  const apiInput = document.getElementById('twelveDataApiKey');
-  const apiKey = apiInput.value.trim();
-  if(!apiKey) throw new Error('API 키를 먼저 입력해 주세요. 최초 한 번만 입력하면 이 브라우저에 저장됩니다.');
-
   const years = getRequestedYears();
   if(years<=0) throw new Error('백테스팅 기간은 0보다 큰 값으로 입력해 주세요.');
   const tracked = holdings.filter(h=>h.targetWeight>0);
@@ -1519,10 +1545,9 @@ async function loadAutomaticMarketData(){
     : '';
   const symbols = [...new Set(tracked.map(h=>normalizedMarketSymbol(h.symbol)).concat(benchmarkSymbol || []))];
   const range = getRequestedDateRange();
-  localStorage.setItem(API_KEY_STORAGE_KEY,apiKey);
 
-  setAnalysisStatus(`${symbols.join(', ')} 과거 시세를 불러오는 중입니다…`,'loading');
-  const {series,errors} = await fetchAutomaticSeries(symbols,apiKey,range);
+  setAnalysisStatus(`${symbols.join(', ')} 저장 시세를 불러오는 중입니다…`,'loading');
+  const {series,errors} = await fetchAutomaticSeries(symbols,range);
   let fetchedHoldings = 0;
 
   tracked.forEach(h=>{
@@ -1531,6 +1556,7 @@ async function loadAutomaticMarketData(){
     h.history = item.prices;
     h.historyDates = item.dates;
     h.marketCurrency = item.currency || h.marketCurrency;
+    h.instrumentType = item.snapshot?.type || h.instrumentType;
     h.curPrice = convertMarketPrice(item.prices.at(-1),item.currency,h.currency);
     fetchedHoldings++;
   });
@@ -1545,7 +1571,7 @@ async function loadAutomaticMarketData(){
   renderAll();
   if(missing.length){
     const detail = errors.length ? ` (${errors.join(' / ')})` : '';
-    throw new Error(`${years}년 데이터가 부족한 종목: ${missing.join(', ')}. 상장일 또는 API 제공 범위를 확인해 주세요.${detail}`);
+    throw new Error(`${years}년 저장 데이터가 부족한 종목: ${missing.join(', ')}. 상장일을 확인하거나 무료 데이터 생성을 요청해 주세요.${detail}`);
   }
   return {fetchedHoldings, totalDays:Math.min(...tracked.map(h=>h.history.length)), warnings:errors};
 }
@@ -1660,22 +1686,14 @@ async function runRiskAnalysis(){
   syncAllHistoryFromInputs();
 
   try{
-    const apiKey = document.getElementById('twelveDataApiKey').value.trim();
-    let statusPrefix = '';
-    if(apiKey){
-      try{
-        const result = await loadAutomaticMarketData();
-        statusPrefix = `자동 조회 ${result.fetchedHoldings}종목 · `;
-      }catch(error){
-        const allHaveFallback = holdings.filter(h=>h.targetWeight>0).every(h=>hasRequestedCoverage(h));
-        if(!allHaveFallback) throw error;
-        statusPrefix = `자동 조회 일부 실패, 저장된 데이터 사용 · `;
-        setAnalysisStatus(friendlyMarketError(error),'error');
-      }
-    }else{
-      const allHaveManual = holdings.filter(h=>h.targetWeight>0).length>0 && holdings.filter(h=>h.targetWeight>0).every(h=>hasRequestedCoverage(h));
-      if(!allHaveManual) throw new Error('자동 분석을 사용하려면 무료 API 키를 최초 한 번 입력해 주세요.');
-      statusPrefix = '수동 데이터 · ';
+    let statusPrefix='';
+    try{
+      const result=await loadAutomaticMarketData();
+      statusPrefix=`무료 캐시 ${result.fetchedHoldings}종목 · `;
+    }catch(error){
+      const allHaveFallback=holdings.filter(h=>h.targetWeight>0).every(h=>hasRequestedCoverage(h));
+      if(!allHaveFallback) throw error;
+      statusPrefix='캐시 일부 실패, 브라우저 저장 데이터 사용 · ';
     }
     calculateRiskAnalysis(statusPrefix);
   }catch(error){
@@ -1718,12 +1736,10 @@ async function runComparison(){
   const resultEl=document.getElementById('comparisonResult');
   const button=document.getElementById('compareRunBtn');
   if(comparisonSymbols.length<2){ resultEl.className='error-box'; resultEl.textContent='비교할 종목을 2개 이상 추가해 주세요.'; return; }
-  const key=getTwelveKey();
-  if(!key){ resultEl.className='error-box'; resultEl.textContent='Twelve Data API 키가 필요합니다.'; return; }
   button.disabled=true; resultEl.className='analysis-status loading'; resultEl.textContent='같은 기간의 가격을 불러와 비교하는 중입니다…';
   try{
     const range=getRequestedDateRange();
-    const {series,errors}=await fetchAutomaticSeries(comparisonSymbols,key,range);
+    const {series,errors}=await fetchAutomaticSeries(comparisonSymbols,range);
     const missing=comparisonSymbols.filter(symbol=>!series.has(symbol));
     if(missing.length) throw new Error(`비교 데이터 부족: ${missing.join(', ')}${errors.length?' · '+errors.join(' / '):''}`);
     const named=comparisonSymbols.map(symbol=>series.get(symbol));
@@ -1749,16 +1765,17 @@ async function runComparison(){
 /* =====================================================================
    7. ETF 엑스레이
 ===================================================================== */
-async function identifyHoldingType(h,key){
+async function identifyHoldingType(h){
   if(h.instrumentType) return h.instrumentType;
-  const url=new URL('https://api.twelvedata.com/symbol_search');
-  url.searchParams.set('symbol',h.symbol); url.searchParams.set('outputsize','8'); url.searchParams.set('apikey',key);
   try{
-    const payload=await fetchJson(url);
-    const matches=(payload.data || []).filter(item=>String(item.symbol).toUpperCase()===h.symbol);
-    const preferred=matches.find(item=>['NASDAQ','NYSE','AMEX'].includes(String(item.exchange).toUpperCase())) || matches[0];
-    if(preferred){ h.instrumentType=preferred.instrument_type || ''; h.marketCurrency=preferred.currency || h.marketCurrency; }
-  }catch(error){ /* 분류 실패 시 개별 주식으로 보수적으로 처리 */ }
+    const catalog=await loadMarketCatalog();
+    const match=catalog.items.find(item=>item.symbol===h.symbol);
+    if(match){ h.instrumentType=match.type || ''; h.marketCurrency=match.currency || h.marketCurrency; }
+    else{
+      const snapshot=await loadMarketSnapshot(h.symbol);
+      h.instrumentType=snapshot.type || ''; h.marketCurrency=snapshot.currency || h.marketCurrency;
+    }
+  }catch(error){ /* 분류 실패 시 직접 노출로 보수적으로 처리 */ }
   return h.instrumentType;
 }
 
@@ -1767,14 +1784,12 @@ async function runPortfolioXray(){
   const status=document.getElementById('xrayStatus');
   const result=document.getElementById('xrayResult');
   if(!holdings.length){ status.textContent='포트폴리오 종목을 먼저 추가해 주세요.'; status.className='analysis-status error'; return; }
-  const twelveKey=getTwelveKey(), fmpKey=getFmpKey();
-  if(!twelveKey){ status.textContent='종목 분류를 위해 Twelve Data API 키가 필요합니다.'; status.className='analysis-status error'; return; }
   button.disabled=true; status.textContent='ETF 구성과 실질 노출을 계산하는 중입니다…'; status.className='analysis-status loading';
   try{
-    await Promise.all(holdings.map(h=>identifyHoldingType(h,twelveKey)));
+    await Promise.all(holdings.map(h=>identifyHoldingType(h)));
     const etfs=holdings.filter(h=>/etf|exchange-traded|fund/i.test(h.instrumentType));
-    if(etfs.length && !fmpKey) throw new Error('ETF 내부 보유종목 분석을 위해 위 리서치 영역에 FMP API 키를 입력해 주세요.');
-    for(const h of etfs){ if(!xrayCache[h.symbol]?.holdings?.length) await loadEtfDetails(h.symbol); }
+    for(const h of etfs){ if(!xrayCache[h.symbol]) await loadEtfDetails(h.symbol); }
+    const incompleteEtfs=etfs.filter(h=>!xrayCache[h.symbol]?.holdings?.length).map(h=>h.symbol);
 
     const exposure=new Map(), sectors=new Map();
     holdings.forEach(h=>{
@@ -1802,15 +1817,72 @@ async function runPortfolioXray(){
     sectorRows.filter(([,weight])=>weight>=40).forEach(([name,weight])=>warnings.push(`${name} 섹터 ${weight.toFixed(1)}%`));
     overlaps.filter(item=>item.value>=50).forEach(item=>warnings.push(`${item.a}·${item.b} 중복 ${item.value.toFixed(1)}%`));
     result.className='';
-    result.innerHTML=`<div class="mini-grid"><div class="subpanel"><h3>상위 실질 종목 노출</h3><div class="scroll-table"><table><tbody>${exposureRows}</tbody></table></div></div>${sectorHtml}${overlapHtml}</div>${warnings.length?`<div class="warning-box"><b>집중도 확인:</b> ${escapeHtml(warnings.join(' · '))}</div>`:'<div class="note">설정한 기준에서 뚜렷한 과집중 경고가 없습니다.</div>'}`;
-    status.textContent=`ETF ${etfs.length}개 · 실질 종목 ${exposure.size}개 분석 완료`; status.className='analysis-status success';
+    result.innerHTML=`<div class="mini-grid"><div class="subpanel"><h3>상위 실질 종목 노출</h3><div class="scroll-table"><table><tbody>${exposureRows}</tbody></table></div></div>${sectorHtml}${overlapHtml}</div>${warnings.length?`<div class="warning-box"><b>집중도 확인:</b> ${escapeHtml(warnings.join(' · '))}</div>`:'<div class="note">설정한 기준에서 뚜렷한 과집중 경고가 없습니다.</div>'}${incompleteEtfs.length?`<div class="note">${escapeHtml(incompleteEtfs.join(', '))}: 주식형 상위 보유종목이 제공되지 않아 ETF 자체 노출로 표시했습니다.</div>`:''}`;
+    status.textContent=`ETF ${etfs.length}개 · 실질 종목 ${exposure.size}개 분석 완료 · API 호출 0회`; status.className='analysis-status success';
     persistState();
   }catch(error){ result.className='empty'; status.textContent=friendlyMarketError(error); status.className='analysis-status error'; }
   finally{ button.disabled=false; }
 }
 
 /* =====================================================================
-   8. 투자 일지
+   8. 적립식·목표자산 시뮬레이션
+===================================================================== */
+function monthsToGoal(start,monthly,annualRate,target,maxYears){
+  if(start>=target) return 0;
+  const safeRate=Math.max(-.95,annualRate);
+  const monthlyRate=Math.pow(1+safeRate,1/12)-1;
+  let value=start;
+  for(let month=1;month<=maxYears*12;month++){
+    value=value*(1+monthlyRate)+monthly;
+    if(value>=target) return month;
+  }
+  return null;
+}
+
+function formatGoalTime(months){
+  if(months===0) return '이미 달성';
+  if(months===null) return '계산기간 내 미달';
+  const years=Math.floor(months/12), rest=months%12;
+  return `${years?years+'년 ':''}${rest?rest+'개월':''}`.trim();
+}
+
+function runPlanningSimulation(){
+  const result=document.getElementById('planningResult');
+  if(lastBacktestSeries.length<22 || lastRiskDates.length!==lastBacktestSeries.length){
+    result.className='error-box'; result.textContent='05번에서 백테스트를 먼저 실행해 주세요.'; return;
+  }
+  const monthly=Math.max(0,finiteNumber(document.getElementById('monthlyContribution').value));
+  const target=Math.max(1,finiteNumber(document.getElementById('goalAsset').value));
+  const maxYears=Math.min(50,Math.max(1,Math.round(finiteNumber(document.getElementById('projectionYears').value,20))));
+  const initial=Math.max(0,getTotalInvestment());
+  let dcaValue=initial, contributions=0;
+  for(let index=1;index<lastBacktestSeries.length;index++){
+    const prior=lastBacktestSeries[index-1], current=lastBacktestSeries[index];
+    dcaValue*=prior>0?current/prior:1;
+    if(index%21===0){ dcaValue+=monthly; contributions++; }
+  }
+  const invested=initial+monthly*contributions;
+  const growth=lastBacktestSeries.at(-1)/lastBacktestSeries[0];
+  const lumpValue=invested*growth;
+  const elapsed=Math.max((Date.parse(lastRiskDates.at(-1))-Date.parse(lastRiskDates[0]))/86400000/365.25,1/252);
+  const base=Math.pow(growth,1/elapsed)-1;
+  const volatility=Math.max(0,annualizedVolatility(lastBacktestSeries)/100);
+  const scenarios=[
+    ['보수',Math.max(-.5,base-volatility*.5)],['기준',base],['낙관',Math.min(1.5,base+volatility*.5)]
+  ];
+  const starting=portfolioMode==='ACTUAL'&&totalCurrentValue()>0?totalCurrentValue():initial;
+  const scenarioHtml=scenarios.map(([name,rate])=>{
+    const months=monthsToGoal(starting,monthly,rate,target,maxYears);
+    return `<div class="metric"><div class="k">${name} · 연 ${(rate*100).toFixed(1)}%</div><div class="v">${escapeHtml(formatGoalTime(months))}</div></div>`;
+  }).join('');
+  const difference=dcaValue-lumpValue;
+  result.className='';
+  result.innerHTML=`<div class="mini-grid" style="margin-top:14px;"><div class="subpanel"><h3>과거 경로 비교</h3>동일 투입금 ${fmtWon(invested)}<br>적립식 결과 <b>${fmtWon(dcaValue)}</b><br>전액 일시투자 결과 <b>${fmtWon(lumpValue)}</b><br><span class="${difference>=0?'pos':'neg'}">적립식 − 일시투자 ${difference>=0?'+':''}${fmtWon(difference)}</span></div><div class="subpanel"><h3>목표 ${fmtWon(target)} 도달 범위</h3><div class="metric-grid" style="margin:0;">${scenarioHtml}</div></div></div><div class="note">일시투자는 전체 예정 납입액을 시작일에 모두 투자할 수 있었다고 가정합니다. 목표 계산은 과거 CAGR을 기준으로 변동성의 절반을 더하거나 뺀 단순 시나리오이며 미래 수익을 예측하거나 보장하지 않습니다.</div>`;
+  persistState();
+}
+
+/* =====================================================================
+   9. 투자 일지
 ===================================================================== */
 function renderJournalSelector(){
   const select=document.getElementById('journalHolding');
@@ -1901,6 +1973,11 @@ function collectData(){
     usdKrw: getUsdKrw(),
     backtestYears: Math.max(0.1,finiteNumber(document.getElementById('backtestYears').value,3)),
     riskFreeRate: Math.max(0,finiteNumber(document.getElementById('riskFreeRate').value,3)),
+    planningSettings:{
+      monthlyContribution:Math.max(0,finiteNumber(document.getElementById('monthlyContribution').value,300000)),
+      goalAsset:Math.max(1,finiteNumber(document.getElementById('goalAsset').value,100000000)),
+      projectionYears:Math.min(50,Math.max(1,finiteNumber(document.getElementById('projectionYears').value,20)))
+    },
     rebalanceSettings:getRebalanceSettings(),
     benchmarkSymbol: String(document.getElementById('benchmarkSymbol').value || 'SPY').trim().toUpperCase().slice(0,20),
     benchmarkHistory: parsePriceSeries(document.getElementById('benchmarkHistory').value),
@@ -1919,6 +1996,10 @@ function hydrateData(data){
   const storedYears=[1,3,5,10].includes(Number(data.backtestYears))?Number(data.backtestYears):3;
   document.getElementById('backtestYears').value = String(storedYears);
   document.getElementById('riskFreeRate').value = Math.max(0,finiteNumber(data.riskFreeRate,3));
+  const planning=data.planningSettings || {};
+  document.getElementById('monthlyContribution').value=Math.max(0,finiteNumber(planning.monthlyContribution,300000));
+  document.getElementById('goalAsset').value=Math.max(1,finiteNumber(planning.goalAsset,100000000));
+  document.getElementById('projectionYears').value=Math.min(50,Math.max(1,finiteNumber(planning.projectionYears,20)));
   const settings=data.rebalanceSettings || {};
   document.getElementById('rebalanceCash').value=Math.max(0,finiteNumber(settings.cash,0));
   document.getElementById('rebalanceMode').value=['MIN_SELL','FULL','BUY_ONLY'].includes(settings.mode)?settings.mode:'MIN_SELL';
@@ -1945,11 +2026,37 @@ function hydrateData(data){
   resetHoldingForm();
 }
 
+function workspaceStorageKey(id=activeWorkspaceId){ return `${STORAGE_KEY}.workspace.${id}`; }
+
+function updateWorkspaceStatus(){
+  const el=document.getElementById('workspaceStatus');
+  if(el) el.textContent=`현재: ${activeWorkspaceLabel} · 이 기기와 브라우저 안에서만 자동 저장됩니다.`;
+}
+
+async function activateWorkspace(){
+  const input=document.getElementById('workspaceKey');
+  const key=input.value.trim();
+  if(key.length<4){ showToast('보관함 키는 4자 이상 입력해 주세요.'); return; }
+  try{
+    persistState();
+    const bytes=new TextEncoder().encode(`MyQuantPlatform:${key}`);
+    const digest=await crypto.subtle.digest('SHA-256',bytes);
+    activeWorkspaceId=[...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('').slice(0,24);
+    activeWorkspaceLabel=`개인 보관함 ${activeWorkspaceId.slice(0,6)}`;
+    localStorage.setItem(ACTIVE_WORKSPACE_KEY,JSON.stringify({id:activeWorkspaceId,label:activeWorkspaceLabel}));
+    const saved=localStorage.getItem(workspaceStorageKey());
+    if(saved) hydrateData(JSON.parse(saved));
+    else hydrateData({holdings:[],portfolioMode:'PLAN',totalInvestment:10000000,usdKrw:1380,backtestYears:3,riskFreeRate:3,benchmarkSymbol:'SPY'});
+    input.value=''; lastBacktestSeries=[]; lastRiskDates=[]; renderAll(); updateWorkspaceStatus();
+    showToast(saved?'기존 개인 보관함을 열었습니다.':'새 개인 보관함을 만들었습니다.');
+  }catch(error){ showToast('보관함을 열지 못했습니다. 브라우저 저장 기능을 확인해 주세요.'); }
+}
+
 function persistState(){
   try{
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(collectData()));
+    localStorage.setItem(workspaceStorageKey(),JSON.stringify(collectData()));
     const status = document.getElementById('saveStatus');
-    if(status) status.textContent = `✓ 이 브라우저에 자동 저장됨 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
+    if(status) status.textContent = `✓ ${activeWorkspaceLabel}에 자동 저장됨 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
   }catch(err){
     const status = document.getElementById('saveStatus');
     if(status) status.textContent = '브라우저 자동 저장을 사용할 수 없습니다. JSON 백업을 이용해 주세요.';
@@ -1958,7 +2065,10 @@ function persistState(){
 
 function loadFromBrowser(){
   try{
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const active=JSON.parse(localStorage.getItem(ACTIVE_WORKSPACE_KEY) || 'null');
+    if(active?.id){ activeWorkspaceId=String(active.id); activeWorkspaceLabel=String(active.label || `개인 보관함 ${activeWorkspaceId.slice(0,6)}`); }
+    let saved = localStorage.getItem(workspaceStorageKey());
+    if(!saved && activeWorkspaceId==='default') saved=localStorage.getItem(STORAGE_KEY);
     if(!saved) return false;
     hydrateData(JSON.parse(saved));
     return true;
@@ -2002,10 +2112,9 @@ function exportCsv(){
 }
 
 function clearAllData(){
-  if(!confirm('포트폴리오와 과거 가격 데이터를 모두 초기화할까요? JSON으로 백업하지 않은 내용은 복구할 수 없습니다.')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(API_KEY_STORAGE_KEY);
-  localStorage.removeItem(FMP_KEY_STORAGE_KEY);
+  if(!confirm(`${activeWorkspaceLabel}의 포트폴리오와 메모를 모두 초기화할까요? JSON으로 백업하지 않은 내용은 복구할 수 없습니다.`)) return;
+  localStorage.removeItem(workspaceStorageKey());
+  if(activeWorkspaceId==='default') localStorage.removeItem(STORAGE_KEY);
   holdings = [];
   benchmarkDates = [];
   lastBacktestSeries = [];
@@ -2018,8 +2127,6 @@ function clearAllData(){
   document.getElementById('inputUsdKrw').value = 1380;
   document.getElementById('benchmarkHistory').value = '';
   document.getElementById('benchmarkSymbol').value = 'SPY';
-  document.getElementById('twelveDataApiKey').value = '';
-  document.getElementById('fmpApiKey').value = '';
   document.getElementById('backtestYears').value = 3;
   document.getElementById('riskFreeRate').value = 3;
   document.getElementById('rebalanceCash').value = 0;
@@ -2027,10 +2134,14 @@ function clearAllData(){
   document.getElementById('rebalanceTolerance').value = 1;
   document.getElementById('rebalanceFee').value = 0;
   document.getElementById('fractionalShares').value = 'YES';
+  document.getElementById('monthlyContribution').value = 300000;
+  document.getElementById('goalAsset').value = 100000000;
+  document.getElementById('projectionYears').value = 20;
   ['statVolatility','statMDD','statCumReturn','statCAGR','statBeta','statSharpe','statSortino'].forEach(id=>document.getElementById(id).textContent='-');
   document.getElementById('correlationMatrix').innerHTML='<div class="empty">분석 실행 후 종목 간 상관관계가 표시됩니다.</div>';
   document.getElementById('comparisonResult').innerHTML='<div class="empty">검색 결과나 포트폴리오에서 최대 4개 종목을 추가하세요.</div>';
   document.getElementById('xrayResult').innerHTML='<div class="empty">ETF 구성을 불러오면 결과가 표시됩니다.</div>';
+  document.getElementById('planningResult').innerHTML='<div class="empty">05번 백테스트를 먼저 실행하면 실제 가격 경로를 이용해 계산합니다.</div>';
   resetHoldingForm();
   renderAll();
   showToast('모든 데이터를 초기화했습니다.');
@@ -2055,18 +2166,9 @@ document.getElementById('benchmarkHistory').addEventListener('input',()=>{
   benchmarkDates = [];
   persistState();
 });
-document.getElementById('twelveDataApiKey').addEventListener('change',event=>{
-  const key = event.target.value.trim();
-  if(key) localStorage.setItem(API_KEY_STORAGE_KEY,key);
-  else localStorage.removeItem(API_KEY_STORAGE_KEY);
-});
-document.getElementById('fmpApiKey').addEventListener('change',event=>{
-  const key=event.target.value.trim();
-  if(key) localStorage.setItem(FMP_KEY_STORAGE_KEY,key);
-  else localStorage.removeItem(FMP_KEY_STORAGE_KEY);
-});
 ['rebalanceCash','rebalanceTolerance','rebalanceFee'].forEach(id=>document.getElementById(id).addEventListener('input',()=>renderAll({renderHistory:false})));
 ['rebalanceMode','fractionalShares'].forEach(id=>document.getElementById(id).addEventListener('change',()=>renderAll({renderHistory:false})));
+['monthlyContribution','goalAsset','projectionYears'].forEach(id=>document.getElementById(id).addEventListener('input',persistState));
 ['fSymbol','fName','fWeight','fShares','fAvgPrice','fCurPrice'].forEach(id=>{
   document.getElementById(id).addEventListener('keydown',event=>{
     if(event.key==='Enter'){ event.preventDefault(); addHolding(); }
@@ -2092,11 +2194,10 @@ window.addEventListener('resize',()=>{
 
 /* 초기 렌더링 */
 loadFromBrowser();
-try{ document.getElementById('twelveDataApiKey').value = localStorage.getItem(API_KEY_STORAGE_KEY) || ''; }
-catch(err){ /* 저장소를 사용할 수 없는 환경에서는 현재 입력값만 사용 */ }
-try{ document.getElementById('fmpApiKey').value = localStorage.getItem(FMP_KEY_STORAGE_KEY) || ''; }
-catch(err){ /* 저장소를 사용할 수 없는 환경에서는 현재 입력값만 사용 */ }
 renderAll();
+updateWorkspaceStatus();
+refreshMarketManifest();
+loadMarketCatalog().catch(()=>{});
 </script>
 </body>
 </html>
