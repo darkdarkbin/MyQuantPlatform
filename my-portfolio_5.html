@@ -726,14 +726,17 @@ function staticDataUrl(path,force=false){
 
 async function fetchJson(url,options={}){
   const response = await fetch(url.toString(),{headers:{Accept:'application/json'},cache:options.force?'no-store':'default'});
-  let payload;
-  try{ payload=await response.json(); }
-  catch(error){ throw new Error('데이터 서버 응답을 읽지 못했습니다.'); }
   if(!response.ok){
+    // GitHub Pages returns an HTML 404 page (not JSON) for missing files, so this
+    // check must happen BEFORE response.json() below -- otherwise every missing
+    // file surfaces as a confusing generic parse error instead of "no data yet".
     const error=new Error(response.status===404?'저장된 데이터가 아직 없습니다.':`데이터 파일 오류 (${response.status})`);
     error.code=response.status===404?'CACHE_MISS':'FETCH_ERROR';
     throw error;
   }
+  let payload;
+  try{ payload=await response.json(); }
+  catch(error){ throw new Error('데이터 서버 응답을 읽지 못했습니다.'); }
   return payload;
 }
 
@@ -751,11 +754,26 @@ async function loadMarketCatalog(force=false){
 async function loadMarketSnapshot(symbol,force=false){
   const normalized=normalizedMarketSymbol(symbol);
   if(snapshotMemory.has(normalized) && !force) return snapshotMemory.get(normalized);
-  const payload=await fetchJson(staticDataUrl(`data/market/${encodeURIComponent(normalized)}.json`,force),{force});
-  if(payload?.schemaVersion!==CACHE_SCHEMA_VERSION || payload?.symbol!==normalized || !payload?.history?.dates?.length){
-    throw new Error(`${normalized} 데이터 파일이 손상되었거나 비어 있습니다.`);
+  let target=normalized;
+  let payload;
+  try{
+    payload=await fetchJson(staticDataUrl(`data/market/${encodeURIComponent(target)}.json`,force),{force});
+  }catch(error){
+    // 무료 데이터 캐시는 클래스주식을 하이픈(BRK-B)으로만 저장하지만, 사람들은 흔히
+    // 마침표(BRK.B)로 씁니다. 캐시에 없을 때(CACHE_MISS) 하이픈 표기로 한 번 더 시도합니다.
+    const altTarget=target.replace(/\./g,'-');
+    if(error?.code==='CACHE_MISS' && altTarget!==target){
+      payload=await fetchJson(staticDataUrl(`data/market/${encodeURIComponent(altTarget)}.json`,force),{force});
+      target=altTarget;
+    }else{
+      throw error;
+    }
+  }
+  if(payload?.schemaVersion!==CACHE_SCHEMA_VERSION || payload?.symbol!==target || !payload?.history?.dates?.length){
+    throw new Error(`${target} 데이터 파일이 손상되었거나 비어 있습니다.`);
   }
   snapshotMemory.set(normalized,payload);
+  snapshotMemory.set(target,payload);
   return payload;
 }
 
