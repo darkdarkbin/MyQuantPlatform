@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import math
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -22,7 +23,10 @@ def main() -> None:
         fail("no market snapshots")
     symbols: list[str] = []
     for path in paths:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            fail(f"{path.name}: corrupt JSON ({exc})")
         symbol = payload.get("symbol")
         symbols.append(symbol)
         if payload.get("schemaVersion") != 2:
@@ -31,12 +35,28 @@ def main() -> None:
             fail(f"{path.name}: symbol mismatch")
         history = payload.get("history") or {}
         dates, closes = history.get("dates") or [], history.get("close") or []
-        if len(dates) != len(closes) or len(dates) < 200:
+        short_history = (payload.get("dataStatus") or {}).get("history") == "short"
+        minimum_history = 2 if short_history else 200
+        if len(dates) != len(closes) or len(dates) < minimum_history:
             fail(f"{symbol}: invalid history length")
         if dates != sorted(dates) or len(dates) != len(set(dates)):
             fail(f"{symbol}: dates are not unique ascending values")
         if any(not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0 for value in closes):
             fail(f"{symbol}: invalid close")
+        cache = payload.get("cache") or {}
+        if cache and (
+            cache.get("status") not in {"success", "stale", "failed"}
+            or not cache.get("updatedAt")
+            or not cache.get("source")
+        ):
+            fail(f"{symbol}: invalid cache metadata")
+        liquidity = payload.get("liquidity") or {}
+        if liquidity and liquidity.get("value") is not None and (
+            not isinstance(liquidity["value"], (int, float))
+            or not math.isfinite(liquidity["value"])
+            or liquidity["value"] < 0
+        ):
+            fail(f"{symbol}: invalid liquidity metadata")
         if payload.get("type") == "STOCK":
             if not (payload.get("financials") or {}).get("years"):
                 fail(f"{symbol}: missing annual financials")
@@ -57,7 +77,13 @@ def main() -> None:
     catalog = json.loads((ROOT / "data" / "catalog.json").read_text(encoding="utf-8"))
     if catalog.get("count") != len(catalog.get("items") or []) or catalog.get("count", 0) < 1000:
         fail("catalog is missing or truncated")
-    print(f"cache integrity OK: {len(paths)} detailed tickers / {catalog['count']} searchable tickers")
+    universe = json.loads((ROOT / "data" / "universe.json").read_text(encoding="utf-8"))
+    if universe.get("threshold") != 1_000_000 or universe.get("count") != len(universe.get("items") or []):
+        fail("liquidity universe is invalid")
+    required = {"VIG", "IQQ"}
+    if not required.issubset(set(symbols)):
+        fail("required VIG/IQQ snapshots are missing")
+    print(f"cache integrity OK: {len(paths)} detailed tickers / {catalog['count']} searchable tickers / {universe['count']} liquidity-universe entries")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,8 @@ temporary upstream failure occurs.
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import math
 import re
@@ -18,9 +20,9 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
-
-import requests
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlencode
+from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,12 +31,40 @@ MARKET_DIR = DATA_DIR / "market"
 CATALOG_PATH = DATA_DIR / "catalog.json"
 MANIFEST_PATH = DATA_DIR / "manifest.json"
 DEFAULT_TICKERS_PATH = DATA_DIR / "default-tickers.json"
+UNIVERSE_PATH = DATA_DIR / "universe.json"
 SCHEMA_VERSION = 2
 NASDAQ_BASE = "https://api.nasdaq.com/api"
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "Chrome/126.0 Safari/537.36 MyQuantPlatform/2.0"
 )
+KNOWN_FUND_METADATA: dict[str, dict[str, Any]] = {
+    "VIG": {
+        "provider": "Vanguard",
+        "exchange": "NYSE Arca",
+        "inceptionDate": "2006-04-21",
+        "benchmarkIndex": "S&P U.S. Dividend Growers Index",
+        "assetClass": "미국 대형주",
+        "strategy": "배당금을 꾸준히 늘려 온 미국 기업에 투자하는 패시브 ETF",
+        "distributionFrequency": "분기",
+        "officialUrl": "https://investor.vanguard.com/investment-products/etfs/profile/vig",
+    },
+    "IQQ": {
+        "provider": "iShares by BlackRock",
+        "exchange": "NASDAQ",
+        "inceptionDate": "2026-07-08",
+        "benchmarkIndex": "Nasdaq 100 Index",
+        "assetClass": "미국 대형 성장주",
+        "strategy": "Nasdaq에 상장된 시가총액 상위 비금융 기업을 추종하는 패시브 ETF",
+        "distributionFrequency": "분기",
+        "officialUrl": "https://www.ishares.com/us/products/351653/ishares-nasdaq-100-etf",
+        "expenseRatio": 0.0012,
+        "netExpenseRatio": 0.0010,
+        "spread": 0.0004,
+        "holdingsCount": 103,
+        "holdingsUrl": "https://www.ishares.com/us/products/351653/ishares-nasdaq-100-etf/latest-holdings.csv",
+    },
+}
 
 
 class DataUnavailable(RuntimeError):
@@ -86,34 +116,37 @@ def pick_value(payload: dict[str, Any] | None, key: str) -> Any:
 
 class NasdaqClient:
     def __init__(self) -> None:
-        self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "User-Agent": USER_AGENT,
-                "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Origin": "https://www.nasdaq.com",
-                "Referer": "https://www.nasdaq.com/",
-            }
-        )
+        self.headers = {
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://www.nasdaq.com",
+            "Referer": "https://www.nasdaq.com/",
+        }
 
     def get(self, path: str, params: dict[str, Any] | None = None, *, attempts: int = 4) -> Any:
         url = f"{NASDAQ_BASE}/{path.lstrip('/')}"
+        if params:
+            url = f"{url}?{urlencode(params)}"
         last_error: Exception | None = None
         for attempt in range(attempts):
             try:
-                response = self.session.get(url, params=params, timeout=35)
-                if response.status_code == 404:
-                    raise DataUnavailable(f"404: {path}")
-                response.raise_for_status()
-                payload = response.json()
+                request = Request(url, headers=self.headers)
+                with urlopen(request, timeout=35) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
                 status = payload.get("status") if isinstance(payload, dict) else None
                 if isinstance(status, dict) and status.get("rCode") not in (None, 200):
                     raise DataUnavailable(f"Nasdaq data unavailable: {path}")
                 if isinstance(payload, dict) and payload.get("data") is None:
                     raise DataUnavailable(f"No data: {path}")
                 return payload.get("data") if isinstance(payload, dict) else payload
-            except (requests.RequestException, ValueError, DataUnavailable) as exc:
+            except HTTPError as exc:
+                if exc.code == 404:
+                    raise DataUnavailable(f"404: {path}") from exc
+                last_error = exc
+                if attempt + 1 < attempts:
+                    time.sleep(1.5 * (attempt + 1))
+            except (URLError, TimeoutError, ValueError, DataUnavailable) as exc:
                 last_error = exc
                 if attempt + 1 < attempts:
                     time.sleep(1.5 * (attempt + 1))
@@ -125,6 +158,44 @@ def safe_get(client: NasdaqClient, path: str, params: dict[str, Any] | None = No
         return client.get(path, params)
     except DataUnavailable:
         return None
+
+
+def load_official_fund_holdings(symbol: str) -> list[dict[str, Any]]:
+    metadata = KNOWN_FUND_METADATA.get(symbol, {})
+    url = metadata.get("holdingsUrl")
+    if not url:
+        return []
+    request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/csv,*/*"})
+    try:
+        with urlopen(request, timeout=35) as response:
+            text = response.read().decode("utf-8-sig")
+    except (HTTPError, URLError, TimeoutError, UnicodeDecodeError):
+        return []
+    lines = text.splitlines()
+    header_index = next(
+        (index for index, line in enumerate(lines) if line.startswith("Ticker,Name,")),
+        None,
+    )
+    if header_index is None:
+        return []
+    holdings: list[dict[str, Any]] = []
+    for row in csv.DictReader(io.StringIO("\n".join(lines[header_index:]))):
+        if str(row.get("Asset Class") or "").strip().casefold() != "equity":
+            continue
+        symbol_value = str(row.get("Ticker") or "").strip().upper()
+        weight = parse_number(row.get("Weight (%)"))
+        if not symbol_value or weight is None or weight <= 0:
+            continue
+        holdings.append(
+            {
+                "symbol": symbol_value,
+                "name": row.get("Name") or symbol_value,
+                "weight": weight,
+                "sector": row.get("Sector") or None,
+                "country": row.get("Location") or None,
+            }
+        )
+    return holdings
 
 
 def normalize_symbol(value: str) -> str:
@@ -237,6 +308,9 @@ def period_stats(history: dict[str, list[Any]], days: int) -> dict[str, Any] | N
     close = history.get("close") or []
     if len(dates) < 2 or len(close) != len(dates):
         return None
+    available_days = (date.fromisoformat(dates[-1]) - date.fromisoformat(dates[0])).days
+    if available_days < days * 0.8:
+        return None
     cutoff = (date.fromisoformat(dates[-1]) - timedelta(days=days)).isoformat()
     indices = [index for index, value in enumerate(dates) if value >= cutoff]
     if len(indices) < 2:
@@ -300,7 +374,7 @@ def build_research_payload(
         },
     )
     history = parse_history(history_payload)
-    if len(history["dates"]) < 20:
+    if len(history["dates"]) < 2:
         raise DataUnavailable(f"Not enough history for {symbol}")
 
     primary = info.get("primaryData") or {}
@@ -357,38 +431,78 @@ def build_research_payload(
                 }
             )
             time.sleep(0.12)
+        official_holdings = load_official_fund_holdings(symbol)
+        if official_holdings:
+            top_holdings = official_holdings
 
     sector_weights: dict[str, float] = {}
+    country_weights: dict[str, float] = {}
     for holding in top_holdings:
         sector = holding.get("sector") or "기타/미분류"
         sector_weights[sector] = sector_weights.get(sector, 0) + float(holding["weight"])
+        country = holding.get("country") or "기타/미분류"
+        country_weights[country] = country_weights.get(country, 0) + float(holding["weight"])
 
     high_low = str(pick_value(summary, "FiftTwoWeekHighLow") or "")
     high_low_numbers = [parse_number(value) for value in high_low.split("/")]
     high_low_numbers = [value for value in high_low_numbers if value is not None]
+    recent_volumes = [
+        value for value in history.get("volume", []) if value is not None and value >= 0
+    ]
+    average_20_day_volume = (
+        sum(recent_volumes[-20:]) / 20 if len(recent_volumes) >= 20 else None
+    )
+    average_30_day_volume = (
+        sum(recent_volumes[-30:]) / 30 if len(recent_volumes) >= 30 else None
+    )
+    latest_normal_volume = recent_volumes[-1] if recent_volumes else None
+    upstream_average_volume = parse_number(
+        pick_value(summary, "AverageVolume") or pick_value(summary, "FiftyDayAvgDailyVol")
+    )
+    liquidity_value = (
+        average_20_day_volume
+        if average_20_day_volume is not None
+        else average_30_day_volume
+        if average_30_day_volume is not None
+        else upstream_average_volume
+        if upstream_average_volume is not None
+        else latest_normal_volume
+    )
+    liquidity_basis = (
+        "최근 20거래일 평균 거래량"
+        if average_20_day_volume is not None
+        else "최근 30거래일 평균 거래량"
+        if average_30_day_volume is not None
+        else "공급처 평균 거래량"
+        if upstream_average_volume is not None
+        else "최근 정상 거래일 거래량"
+    )
+    fund_metadata = KNOWN_FUND_METADATA.get(symbol, {}) if instrument_type == "ETF" else {}
     quote_data = {
         "price": price,
         "previousClose": parse_number(pick_value(summary, "PreviousClose")),
         "marketCap": market_cap,
         "volume": parse_number(pick_value(summary, "ShareVolume")),
-        "averageVolume": parse_number(
-            pick_value(summary, "AverageVolume") or pick_value(summary, "FiftyDayAvgDailyVol")
-        ),
+        "averageVolume": liquidity_value,
         "high52": high_low_numbers[0] if len(high_low_numbers) >= 2 else None,
         "low52": high_low_numbers[1] if len(high_low_numbers) >= 2 else None,
         "dividend": parse_number(pick_value(summary, "AnnualizedDividend")),
         "dividendYield": parse_number(pick_value(summary, "Yield")),
         "beta": parse_number(pick_value(summary, "Beta")),
         "aum": parse_number(pick_value(summary, "AUM"), thousands=True),
-        "expenseRatio": parse_number(pick_value(summary, "ExpenseRatio")),
+        "expenseRatio": parse_number(pick_value(summary, "ExpenseRatio"))
+        or fund_metadata.get("expenseRatio"),
     }
 
+    updated_at = utc_now()
     result = {
         "schemaVersion": SCHEMA_VERSION,
         "symbol": symbol,
         "name": company_name,
         "type": instrument_type,
-        "exchange": info.get("exchange") or pick_value(summary, "Exchange"),
+        "exchange": fund_metadata.get("exchange")
+        or info.get("exchange")
+        or pick_value(summary, "Exchange"),
         "currency": "USD",
         "sector": pick_value(profile, "Sector") or pick_value(summary, "Sector"),
         "industry": pick_value(profile, "Industry") or pick_value(summary, "Industry"),
@@ -396,8 +510,31 @@ def build_research_payload(
         "description": pick_value(profile, "CompanyDescription")
         or (f"{company_name}는 {symbol} 티커로 거래되는 상장지수펀드(ETF)입니다." if instrument_type == "ETF" else ""),
         "website": pick_value(profile, "CompanyUrl"),
-        "updatedAt": utc_now(),
+        "updatedAt": updated_at,
         "dataDate": history["dates"][-1],
+        "cache": {
+            "updatedAt": updated_at,
+            "source": "Nasdaq.com market pages",
+            "status": "success",
+            "version": str(SCHEMA_VERSION),
+        },
+        "dataStatus": {
+            "status": "success",
+            "history": "short" if len(history["dates"]) < 20 else "available",
+            "historyPoints": len(history["dates"]),
+            "message": "상장 이력이 짧아 일부 기간 계산 불가"
+            if len(history["dates"]) < 20
+            else "정상",
+        },
+        "liquidity": {
+            "threshold": 1_000_000,
+            "value": liquidity_value,
+            "basis": liquidity_basis,
+            "qualifies": liquidity_value is not None and liquidity_value >= 1_000_000,
+            "average20Day": average_20_day_volume,
+            "average30Day": average_30_day_volume,
+            "latestNormalDay": latest_normal_volume,
+        },
         "quote": quote_data,
         "valuation": {"pe": pe, "pbr": pbr, "psr": psr},
         "profitability": {
@@ -427,11 +564,29 @@ def build_research_payload(
         "etf": {
             "aum": quote_data["aum"],
             "expenseRatio": quote_data["expenseRatio"],
+            "netExpenseRatio": fund_metadata.get("netExpenseRatio"),
             "yield": quote_data["dividendYield"],
+            "provider": fund_metadata.get("provider"),
+            "inceptionDate": fund_metadata.get("inceptionDate"),
+            "benchmarkIndex": fund_metadata.get("benchmarkIndex"),
+            "assetClass": fund_metadata.get("assetClass"),
+            "strategy": fund_metadata.get("strategy"),
+            "distributionFrequency": fund_metadata.get("distributionFrequency"),
+            "spread": fund_metadata.get("spread"),
+            "holdingsCount": fund_metadata.get("holdingsCount"),
+            "currency": "USD",
+            "leveraged": False,
+            "coveredCall": False,
+            "active": False,
+            "currencyHedged": False,
             "topHoldings": top_holdings,
             "sectorWeights": [
                 {"name": name, "weight": weight}
                 for name, weight in sorted(sector_weights.items(), key=lambda item: item[1], reverse=True)
+            ],
+            "countryWeights": [
+                {"name": name, "weight": weight}
+                for name, weight in sorted(country_weights.items(), key=lambda item: item[1], reverse=True)
             ],
             "holdingsCoverage": sum(float(item["weight"]) for item in top_holdings),
         }
@@ -445,7 +600,19 @@ def build_research_payload(
                 "retrievedAt": utc_now(),
                 "note": "Delayed/public website data; annual financial figures are normalized from Nasdaq tables.",
             }
-        ],
+        ]
+        + (
+            [
+                {
+                    "name": f"{fund_metadata.get('provider')} official fund page",
+                    "url": fund_metadata.get("officialUrl"),
+                    "retrievedAt": updated_at,
+                    "note": "Fund identity, exchange, inception, benchmark and product facts.",
+                }
+            ]
+            if fund_metadata.get("officialUrl")
+            else []
+        ),
     }
     return result
 
@@ -495,6 +662,58 @@ def update_manifest() -> None:
     )
 
 
+def build_liquidity_universe() -> None:
+    catalog = load_json(CATALOG_PATH, {})
+    defaults = set(load_json(DEFAULT_TICKERS_PATH, []))
+    eligible: list[dict[str, Any]] = []
+    for item in catalog.get("items") or []:
+        volume = finite(item.get("volume"))
+        cached_eligibility = item.get("liquidityEligible")
+        qualifies = (
+            bool(cached_eligibility)
+            if cached_eligibility is not None
+            else volume is not None and volume >= 1_000_000
+        )
+        if not qualifies and item.get("symbol") not in defaults:
+            continue
+        eligible.append(
+            {
+                "symbol": item.get("symbol"),
+                "name": item.get("name"),
+                "type": item.get("type"),
+                "exchange": item.get("exchange"),
+                "currency": item.get("currency"),
+                "volume": volume,
+                "volumeBasis": item.get("liquidityBasis")
+                or "최근 정상 거래일 거래량(카탈로그 공급처 값)",
+                "meetsMillionVolume": qualifies,
+                "manualException": item.get("symbol") in defaults and not qualifies,
+            }
+        )
+    updated_at = utc_now()
+    write_json(
+        UNIVERSE_PATH,
+        {
+            "schemaVersion": SCHEMA_VERSION,
+            "updatedAt": updated_at,
+            "threshold": 1_000_000,
+            "methodPriority": [
+                "최근 20거래일 평균 거래량",
+                "최근 30거래일 평균 거래량",
+                "평균 거래량 데이터가 없으면 최근 정상 거래일 거래량",
+            ],
+            "cache": {
+                "updatedAt": updated_at,
+                "source": "data/catalog.json + detailed snapshots + manual defaults",
+                "status": "success",
+                "version": str(SCHEMA_VERSION),
+            },
+            "count": len(eligible),
+            "items": eligible,
+        },
+    )
+
+
 def build_catalog(client: NasdaqClient) -> None:
     stocks_payload = client.get("screener/stocks", {"download": "true"})
     etfs_payload = client.get("screener/etf", {"download": "true"})
@@ -536,6 +755,30 @@ def build_catalog(client: NasdaqClient) -> None:
             "marketCap": None,
             "price": parse_number(item.get("lastSalePrice")),
             "volume": parse_number(item.get("volume")),
+        }
+    for path in MARKET_DIR.glob("*.json"):
+        snapshot = load_json(path, {})
+        symbol = snapshot.get("symbol")
+        if not symbol:
+            continue
+        quote_data = snapshot.get("quote") or {}
+        liquidity = snapshot.get("liquidity") or {}
+        existing = rows.get(symbol, {})
+        rows[symbol] = {
+            **existing,
+            "symbol": symbol,
+            "name": snapshot.get("name") or existing.get("name") or symbol,
+            "type": snapshot.get("type") or existing.get("type"),
+            "exchange": snapshot.get("exchange") or existing.get("exchange"),
+            "currency": snapshot.get("currency") or existing.get("currency"),
+            "country": snapshot.get("region") or existing.get("country"),
+            "sector": snapshot.get("sector") or existing.get("sector"),
+            "industry": snapshot.get("industry") or existing.get("industry"),
+            "marketCap": quote_data.get("marketCap") or existing.get("marketCap"),
+            "price": quote_data.get("price") or existing.get("price"),
+            "volume": liquidity.get("value") or quote_data.get("averageVolume") or existing.get("volume"),
+            "liquidityEligible": liquidity.get("qualifies"),
+            "liquidityBasis": liquidity.get("basis"),
         }
     catalog = sorted(rows.values(), key=lambda item: (item["symbol"], item["name"]))
     write_json(
@@ -605,6 +848,7 @@ def main() -> int:
         time.sleep(0.35)
 
     update_manifest()
+    build_liquidity_universe()
     if failures:
         print("\nFailures (existing cache files were preserved):", file=sys.stderr)
         for failure in failures:

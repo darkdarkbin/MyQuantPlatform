@@ -1,16 +1,20 @@
 {
   "name": "signal-myquantplatform",
-  "version": "0.1.0-rc",
+  "version": "1.0.0",
   "private": true,
-  "description": "Signal (구 MyQuantPlatform) — 유료 API 없이 저장된 시장 데이터로 종목·ETF 리서치와 포트폴리오 진단을 제공하는 정적 GitHub Pages 웹앱. 빌드 도구/번들러/프레임워크 없이 my-portfolio_5.html 단일 파일로 동작합니다.",
+  "description": "API 키 없이 정적 시장 데이터 캐시로 종목·ETF 리서치와 포트폴리오 분석을 제공하는 금융 웹앱",
   "scripts": {
-    "serve": "python3 -m http.server 8080",
+    "serve": "node scripts/static_server.mjs",
     "validate": "node scripts/validate_app.mjs",
-    "validate:cache": "python3 scripts/validate_cache.py",
-    "test": "node scripts/validate_app.mjs && python3 scripts/validate_cache.py && node scripts/runtime_smoke_test.mjs"
+    "validate:cache": "node scripts/run_python.mjs scripts/validate_cache.py",
+    "test": "node scripts/validate_app.mjs && node scripts/run_python.mjs scripts/validate_cache.py && node scripts/runtime_smoke_test.mjs",
+    "build": "node scripts/build.mjs"
   },
   "devDependencies": {
     "jsdom": "^29.1.1"
   },
-  "note": "이 프로젝트에는 npm run dev(핫리로드 개발 서버)나 빌드 단계가 없습니다. 'serve'는 my-portfolio_5.html을 file://가 아닌 http://로 열어보기 위한 가장 단순한 정적 서버 실행일 뿐입니다. 실제 배포는 GitHub Pages가 저장소를 그대로 서빙합니다."
+  "engines": {
+    "node": ">=22"
+  },
+  "note": "npm run build는 검증된 정적 배포 파일을 dist/에 생성하고 npm run serve는 로컬 브라우저 검증 서버를 실행합니다."
 }

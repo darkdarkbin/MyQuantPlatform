@@ -8,27 +8,27 @@
 <style>
   /* ===================== 디자인 토큰 (색상/타이포 변수) ===================== */
   :root{
-    --bg:            #0B1220;   /* 전체 배경: 짙은 네이비 (증권사 HTS 느낌) */
-    --surface:       #131B2E;   /* 카드 배경 */
-    --surface-2:     #1B2540;   /* 살짝 더 밝은 카드 (입력폼 등) */
-    --border:        #2A3550;
-    --text:          #E7ECF7;
-    --text-dim:      #8B96B3;
-    --accent-mint:   #34D399;   /* 상승/양수 */
-    --accent-rose:   #F87171;   /* 하락/음수 */
-    --accent-gold:   #F2B84B;   /* 강조/경고 */
-    --accent-indigo: #6C7BFF;   /* 포인트 컬러 */
-    --radius: 14px;
-    --radius-sm: 9px;
-    --radius-lg: 18px;
-    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Pretendard, 'Malgun Gothic', sans-serif;
+    --bg:            #F7F8FA;
+    --surface:       #FFFFFF;
+    --surface-2:     #F2F4F6;
+    --border:        #E5E8EB;
+    --text:          #191F28;
+    --text-dim:      #6B7684;
+    --accent-mint:   #D64545;   /* 한국 금융 서비스 관례: 상승 */
+    --accent-rose:   #2878D8;   /* 한국 금융 서비스 관례: 하락 */
+    --accent-gold:   #9A6700;
+    --accent-indigo: #3182F6;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --mono: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --sans: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     /* 여백 스케일: Toss류 서비스처럼 카드 내부 리듬을 일정하게 유지하기 위한 기준값 */
     --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
     /* 은은한 다층 그림자 (완전한 평면이 아니라 카드가 살짝 떠 보이도록) */
-    --shadow-sm: 0 1px 2px rgba(0,0,0,.24), 0 1px 1px rgba(0,0,0,.16);
-    --shadow-md: 0 8px 24px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.2);
-    --shadow-lg: 0 20px 48px rgba(0,0,0,.42), 0 6px 16px rgba(0,0,0,.28);
+    --shadow-sm: 0 1px 2px rgba(25,31,40,.04);
+    --shadow-md: 0 8px 24px rgba(25,31,40,.08);
+    --shadow-lg: 0 20px 48px rgba(25,31,40,.12);
     --ease: cubic-bezier(.2,.8,.2,1);
     --transition-fast: .14s var(--ease);
     --transition: .22s var(--ease);
@@ -42,9 +42,10 @@
   *{ box-sizing:border-box; }
   body{
     margin:0; background:var(--bg); color:var(--text);
-    font-family:var(--sans); line-height:1.5; padding:32px 20px 80px;
+    font-family:var(--sans); line-height:1.55; padding:24px 20px 80px;
+    overflow-x:hidden;
   }
-  h1,h2,h3{ font-weight:700; margin:0 0 4px; }
+  h1,h2,h3{ font-weight:600; margin:0 0 4px; letter-spacing:-.025em; }
   .subtitle{ color:var(--text-dim); font-size:14px; margin:0 0 28px; }
 
   .wrap{ max-width:1180px; margin:0 auto; }
@@ -58,9 +59,9 @@
     background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
     padding:18px 20px; box-shadow:var(--shadow-sm); transition:transform var(--transition), box-shadow var(--transition), border-color var(--transition);
   }
-  .stat-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); border-color:rgba(108,123,255,.35); }
+  .stat-card:hover{ border-color:#C9D3E1; }
   .stat-label{ font-size:12px; color:var(--text-dim); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-  .stat-value{ font-family:var(--mono); font-size:24px; font-weight:700; letter-spacing:-.01em; }
+  .stat-value{ font-family:var(--mono); font-size:24px; font-weight:600; letter-spacing:-.02em; white-space:nowrap; }
   .pos{ color:var(--accent-mint); } .neg{ color:var(--accent-rose); }
 
   /* ===================== 공통 카드/섹션 ===================== */
@@ -69,7 +70,7 @@
     padding:22px; margin-bottom:22px; box-shadow:var(--shadow-sm);
   }
   .card h2{ font-size:16px; display:flex; align-items:center; gap:8px; letter-spacing:-.01em; }
-  .card h2 .idx{ color:var(--accent-indigo); font-family:var(--mono); font-size:13px; background:rgba(108,123,255,.12); border-radius:6px; padding:2px 6px; }
+  .card h2 .idx{ color:var(--accent-indigo); font-family:var(--mono); font-size:12px; background:#EDF5FF; border-radius:6px; padding:2px 6px; }
   .card-desc{ color:var(--text-dim); font-size:13px; margin:2px 0 18px; line-height:1.6; }
 
   .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:22px; }
@@ -100,10 +101,10 @@
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{
     outline:2px solid var(--accent-indigo); outline-offset:2px;
   }
-  .btn-primary{ background:var(--accent-indigo); color:#fff; box-shadow:0 4px 14px rgba(108,123,255,.35); }
-  .btn-primary:hover{ opacity:.92; box-shadow:0 6px 18px rgba(108,123,255,.45); }
+  .btn-primary{ background:var(--accent-indigo); color:#fff; }
+  .btn-primary:hover{ background:#1B64DA; }
   .btn-ghost{ background:transparent; border:1px solid var(--border); color:var(--text-dim); }
-  .btn-ghost:hover{ color:var(--text); border-color:var(--text-dim); background:rgba(255,255,255,.03); }
+  .btn-ghost:hover{ color:var(--text); border-color:#B0B8C1; background:#F8FAFC; }
   .btn-danger{ background:transparent; color:var(--accent-rose); border:1px solid rgba(248,113,113,.35); }
   .btn-danger:hover{ background:rgba(248,113,113,.08); }
   .btn-edit{ background:transparent; color:var(--accent-indigo); border:1px solid rgba(108,123,255,.4); }
@@ -158,10 +159,11 @@
 
   .search-shell{ position:relative; margin-bottom:22px; }
   .search-row{ display:grid; grid-template-columns:minmax(180px,1fr) auto; gap:8px; }
-  .search-results{ position:absolute; left:0; right:0; top:48px; z-index:20; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 18px 42px rgba(0,0,0,.45); }
+  .search-results{ position:absolute; left:0; right:0; top:48px; z-index:20; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:auto; max-height:min(420px,55vh); box-shadow:var(--shadow-lg); }
   .search-result{ display:flex; width:100%; align-items:center; justify-content:space-between; gap:12px; text-align:left; background:transparent; color:var(--text); border-radius:0; border-bottom:1px solid var(--border); padding:11px 13px; }
   .search-result:last-child{ border-bottom:none; }
   .search-result:hover{ background:var(--surface-2); }
+  .search-result[aria-selected="true"]{ background:#EDF5FF; box-shadow:inset 3px 0 var(--accent-indigo); }
   .search-result small{ color:var(--text-dim); font-weight:400; }
   .research-panel{ display:none; }
   .research-panel.open{ display:block; }
@@ -171,6 +173,16 @@
   .metric{ background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:12px; }
   .metric .k{ color:var(--text-dim); font-size:11px; }
   .metric .v{ font-family:var(--mono); font-size:15px; font-weight:700; margin-top:4px; }
+  .research-hero{ display:grid; grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr); gap:20px; padding:20px; background:#F8FAFD; border:1px solid var(--border); border-radius:12px; margin-bottom:16px; }
+  .hero-price{ font-size:34px; line-height:1.15; font-weight:700; letter-spacing:-.04em; white-space:nowrap; }
+  .hero-meta{ display:flex; flex-wrap:wrap; gap:7px; color:var(--text-dim); font-size:12px; margin-top:8px; }
+  .hero-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .data-state{ border-left:3px solid var(--accent-indigo); background:#EDF5FF; color:#31557C; border-radius:8px; padding:10px 12px; font-size:12px; margin:10px 0 16px; }
+  .health-score{ font-size:42px; line-height:1; font-weight:700; letter-spacing:-.04em; }
+  .health-breakdown{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-top:12px; }
+  .section-nav{ position:sticky; top:0; z-index:15; display:flex; gap:6px; overflow-x:auto; padding:10px 0; margin-bottom:14px; background:rgba(247,248,250,.94); backdrop-filter:blur(10px); }
+  .section-nav a{ flex:0 0 auto; color:var(--text-dim); text-decoration:none; font-size:12px; padding:8px 10px; border-radius:8px; }
+  .section-nav a:hover{ color:var(--accent-indigo); background:#EAF3FF; }
   .description{ color:var(--text-dim); font-size:13px; line-height:1.7; max-height:120px; overflow:auto; }
   .mini-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
   .subpanel{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:14px; }
@@ -279,9 +291,39 @@
   .coach-tip{ display:flex; gap:8px; padding:8px 0; border-bottom:1px dashed var(--border); font-size:13px; }
   .coach-tip:last-child{ border-bottom:none; }
   .coach-tip .tag{ flex:0 0 auto; font-size:11px; padding:2px 8px; border-radius:10px; height:fit-content; }
-  .tag-risk{ background:rgba(248,113,113,.15); color:var(--accent-rose); }
-  .tag-good{ background:rgba(52,211,153,.15); color:var(--accent-mint); }
-  .tag-info{ background:rgba(108,123,255,.15); color:var(--accent-indigo); }
+  .tag-risk{ background:#FFF0F0; color:#B42318; }
+  .tag-good{ background:#ECFDF3; color:#067647; }
+  .tag-info{ background:#EDF5FF; color:var(--accent-indigo); }
+
+  @media(max-width:480px){
+    body{ padding:14px 12px 72px; font-size:15px; }
+    .wrap{ width:100%; }
+    h1{ font-size:24px; }
+    .subtitle{ font-size:13px; margin-bottom:18px; }
+    .section-nav{ margin-left:-12px; margin-right:-12px; padding-left:12px; padding-right:12px; }
+    .card{ padding:16px; margin-bottom:14px; border-radius:10px; }
+    .stat-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
+    .stat-card{ padding:13px 12px; min-width:0; }
+    .stat-value{ font-size:18px; overflow:hidden; text-overflow:ellipsis; }
+    .search-row,.form-row,.research-hero{ grid-template-columns:1fr; }
+    .grid-2>*{ min-width:0; width:100%; }
+    .search-results{ position:fixed; left:12px; right:12px; top:116px; max-height:calc(100dvh - 140px); }
+    .research-head{ flex-direction:column; }
+    .research-head>div:last-child{ width:100%; }
+    .research-head .footer-actions{ justify-content:flex-start !important; }
+    .hero-price{ font-size:30px; }
+    .metric-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .metric{ min-width:0; padding:10px; }
+    .metric .v{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    button,.btn-ghost,.btn-primary{ min-height:44px; }
+    .btn-sm{ min-height:44px; padding:8px 11px; }
+    .scroll-table{ width:100%; max-width:100%; min-width:0; }
+    .chart-wrap{ height:210px; }
+    .chart-wrap-sm,.donut-wrap{ height:190px; }
+    .footer-actions{ gap:7px; }
+    .footer-actions>*{ flex:1 1 auto; text-align:center; }
+    .toast{ left:12px; right:12px; bottom:12px; max-width:none; }
+  }
 </style>
   <link id="favicon-link" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230B1220'/%3E%3Cpath d='M5 21 L12 12 L17 18 L27 6' stroke='%2334D399' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='27' cy='6' r='2.4' fill='%2334D399'/%3E%3C/svg%3E">
 
@@ -291,9 +333,12 @@
 
   <h1><span style="color:var(--accent-mint);">Signal</span> · 포트폴리오 리서치</h1>
   <p class="subtitle">유료 API 없이 저장된 시장 데이터로 종목을 공부하고, 실제 분산도·위험·리밸런싱까지 연결합니다.</p>
+  <nav class="section-nav" aria-label="주요 기능">
+    <a href="#searchSection">종목 검색</a><a href="#portfolioSection">포트폴리오</a><a href="#riskSection">성과·위험</a><a href="#xraySection">실질 노출</a><a href="#diagnosticsSection">건강도</a><a href="#abSection">A/B 비교</a><a href="#dcaSection">적립식</a>
+  </nav>
 
   <!-- ===================== 종목 검색 & 리서치 ===================== -->
-  <div class="search-shell">
+  <div class="search-shell" id="searchSection">
     <div class="search-row">
       <div>
         <label for="symbolSearch">종목·ETF 검색</label>
@@ -322,6 +367,8 @@
       </div>
     </div>
     <div id="researchLoading" class="analysis-status"></div>
+    <div id="researchDataState"></div>
+    <div id="researchHero" class="research-hero"></div>
     <div id="researchMetrics" class="metric-grid"></div>
     <div class="note">지표 기준: PER은 저장일 가격 ÷ 최근 4개 분기 실제 EPS 합계, PBR은 저장일 시가총액 ÷ 최신 연차 자본, ROE는 Nasdaq 최신 연차 After Tax ROE입니다. 서비스마다 가격 시점·분기/연차·기본/희석 또는 조정 EPS 기준이 달라 값이 조금씩 다를 수 있습니다.</div>
     <p id="researchDescription" class="description"></p>
@@ -347,6 +394,12 @@
       </div>
     </div>
     <div class="subpanel" style="margin-top:14px;"><h3>최근 4개년 재무 추이</h3><div id="researchFinancials" class="scroll-table"><div class="empty">개별 주식 재무 데이터가 표시됩니다.</div></div></div>
+    <div class="subpanel" style="margin-top:14px;"><h3>가격 추이 · 실제 저장 종가</h3><div class="chart-wrap-sm"><canvas id="researchPriceChart"></canvas></div><div id="researchPriceNote" class="note"></div></div>
+    <div class="mini-grid" style="margin-top:14px;">
+      <div class="subpanel"><h3>기업·상품 개요</h3><div id="researchOverview" class="note" style="margin:0;">정보 없음</div></div>
+      <div class="subpanel"><h3>경쟁·대체 관계</h3><div id="researchCompetitors" class="note" style="margin:0;">정보 없음</div></div>
+    </div>
+    <div class="subpanel" style="margin-top:14px;"><h3>버핏형 3문항 · 규칙 기반 분석</h3><div id="researchBuffett" class="mini-grid"></div></div>
     <div id="researchSources" class="source-strip"></div>
     <div id="researchRequest"></div>
   </div>
@@ -372,7 +425,7 @@
   </div>
 
   <!-- ===================== 투자금액 설정 ===================== -->
-  <div class="card">
+  <div class="card" id="portfolioSection">
     <h2><span class="idx">01</span> 투자 금액 설정</h2>
     <p class="card-desc">계획 모드는 목표 비중 연구용, 실제 보유 모드는 평가손익과 실전 리밸런싱용입니다.</p>
     <div class="settings-row">
@@ -396,7 +449,7 @@
   </div>
 
   <!-- ===================== 종목 추가 & 포트폴리오 테이블 ===================== -->
-  <div class="card">
+  <div class="card" id="riskSection">
     <h2><span class="idx">02</span> 종목 비중 입력</h2>
     <p class="card-desc">미국 종목은 AAPL, QQQM처럼 정확한 티커를 입력하세요. 위험도 분석을 실행하면 현재가와 과거 시세가 함께 갱신됩니다.</p>
 
@@ -453,7 +506,7 @@
       </div>
     </div>
 
-  <div class="card">
+  <div class="card" id="xraySection">
     <h2><span class="idx">04</span> 리밸런싱 요약</h2>
       <p class="card-desc">추가 투자금·허용오차·소수점 거래 여부를 반영해 매매 후 비중까지 계산합니다.</p>
       <div class="rebalance-controls">
@@ -468,7 +521,7 @@
   </div>
 
   <!-- ===================== 위험도 분석 & 백테스팅 ===================== -->
-  <div class="card">
+  <div class="card" id="dcaSection">
     <h2><span class="idx">05</span> 위험도 분석 · 백테스팅</h2>
     <p class="card-desc">종목과 목표비중만 준비한 뒤 실행하세요. 저장소의 무료 가격 캐시를 읽고 공통 거래일을 맞춰 변동성·MDD·수익률·베타를 계산합니다.</p>
 
@@ -603,7 +656,16 @@
     <h2><span class="idx">08</span> 적립식 투자 · 목표자산 시뮬레이션</h2>
     <p class="card-desc">실제 백테스트 수익 경로로 적립식과 일시투자를 비교하고, 같은 CAGR·변동성 가정으로 목표 도달 범위를 계산합니다.</p>
     <div class="rebalance-controls">
+      <div><label for="dcaStartDate">시작일</label><input id="dcaStartDate" type="date"></div>
+      <div><label for="dcaEndDate">종료일</label><input id="dcaEndDate" type="date"></div>
+      <div><label for="dcaInitial">초기 투자금(원)</label><input id="dcaInitial" type="number" min="0" step="10000" value="10000000"></div>
       <div><label for="monthlyContribution">월 적립금(원)</label><input id="monthlyContribution" type="number" min="0" step="10000" value="300000"></div>
+      <div><label for="dcaDay">월 납입일</label><input id="dcaDay" type="number" min="1" max="28" step="1" value="1"></div>
+      <div><label for="dcaRebalance">리밸런싱</label><select id="dcaRebalance"><option value="NONE">없음</option><option value="MONTHLY">매월</option><option value="QUARTERLY" selected>분기</option><option value="ANNUAL">연 1회</option></select></div>
+      <div><label for="dcaDividend">배당 재투자</label><select id="dcaDividend"><option value="NO">미반영</option><option value="YES">반영(총수익 데이터 필요)</option></select></div>
+      <div><label for="dcaFee">매매 수수료(%)</label><input id="dcaFee" type="number" min="0" max="10" step="0.01" value="0"></div>
+      <div><label for="dcaTax">세금(이익의 %)</label><input id="dcaTax" type="number" min="0" max="100" step="0.1" value="0"></div>
+      <div><label for="dcaCash">현금 비중(%)</label><input id="dcaCash" type="number" min="0" max="100" step="0.1" value="0"></div>
       <div><label for="goalAsset">목표자산(원)</label><input id="goalAsset" type="number" min="1" step="1000000" value="100000000"></div>
       <div><label for="projectionYears">최대 계산기간(년)</label><input id="projectionYears" type="number" min="1" max="50" step="1" value="20"></div>
     </div>
@@ -612,7 +674,7 @@
   </div>
 
   <!-- ===================== 저장/불러오기 ===================== -->
-  <div class="card">
+  <div class="card" id="diagnosticsSection">
     <h2><span class="idx">09</span> Google 로그인 · 클라우드 저장</h2>
     <p class="card-desc">Google 계정으로 로그인하면 포트폴리오와 투자 일지가 사용자별로 분리되어 다른 기기에서도 자동으로 열립니다.</p>
     <div class="workspace-box">
@@ -662,11 +724,27 @@
       <h3>AI 포트폴리오 코치<span class="ai-badge" id="coachAiBadge">규칙 기반</span></h3>
       <div id="portfolioCoachResult" class="note" style="margin:0;">진단을 실행하면 표시됩니다.</div>
     </div>
+    <div class="subpanel" style="margin-top:14px;">
+      <h3>설명 가능한 포트폴리오 건강도</h3>
+      <div id="portfolioHealthResult" class="empty">진단을 실행하면 점수, 감점 근거와 개선 아이디어가 표시됩니다.</div>
+    </div>
   </div>
 
-  <!-- ===================== 11. 배당 계산기 ===================== -->
+  <div class="card" id="abSection">
+    <h2><span class="idx">11</span> 포트폴리오 A/B 비교</h2>
+    <p class="card-desc">같은 저장 가격 기간과 같은 무위험수익률로 두 구성을 비교합니다. 형식: <code>VOO:70,VIG:30</code></p>
+    <div class="grid-2">
+      <div><label for="portfolioASpec">포트폴리오 A</label><input id="portfolioASpec" value="VOO:70,VIG:30"></div>
+      <div><label for="portfolioBSpec">포트폴리오 B</label><input id="portfolioBSpec" value="QQQ:70,SMH:30"></div>
+    </div>
+    <div class="footer-actions"><button type="button" class="btn-primary" id="abRunBtn" onclick="runPortfolioABComparison()">동일 기간으로 비교</button></div>
+    <div id="portfolioABStatus" class="analysis-status" role="status" aria-live="polite"></div>
+    <div id="portfolioABResult" class="empty">비교를 실행하면 누적수익률·CAGR·변동성·MDD·Sharpe·Sortino와 실질 노출이 표시됩니다.</div>
+  </div>
+
+  <!-- ===================== 12. 배당 계산기 ===================== -->
   <div class="card">
-    <h2><span class="idx">11</span> 배당 계산기</h2>
+    <h2><span class="idx">12</span> 배당 계산기</h2>
     <p class="card-desc">보유 중이거나 검토 중인 종목의 저장된 배당수익률을 기준으로 연/월 배당액과 배당 성장 시나리오를 계산합니다.</p>
     <div class="grid-2">
       <div>
@@ -683,17 +761,17 @@
     </div>
   </div>
 
-  <!-- ===================== 12. 관심종목 (Watchlist) ===================== -->
+  <!-- ===================== 13. 관심종목 (Watchlist) ===================== -->
   <div class="card">
-    <h2><span class="idx">12</span> 관심종목 · Watchlist</h2>
+    <h2><span class="idx">13</span> 관심종목 · Watchlist</h2>
     <p class="card-desc">리서치 화면에서 ☆ 관심종목 버튼을 누르면 여기에 추가됩니다. 이 브라우저에만 저장됩니다.</p>
     <div class="footer-actions"><button type="button" class="btn-ghost btn-sm" onclick="refreshWatchlistPrices()">가격 새로고침</button></div>
     <div id="watchlistResult" style="margin-top:12px;"><div class="empty">아직 관심종목이 없습니다.</div></div>
   </div>
 
-  <!-- ===================== 13. 오늘의 시장 시그널 ===================== -->
+  <!-- ===================== 14. 오늘의 시장 시그널 ===================== -->
   <div class="card">
-    <h2><span class="idx">13</span> 오늘의 시장 시그널<span class="ai-badge" id="digestAiBadge">규칙 기반</span></h2>
+    <h2><span class="idx">14</span> 오늘의 시장 시그널<span class="ai-badge" id="digestAiBadge">규칙 기반</span></h2>
     <p class="card-desc">실시간 뉴스가 아니라, 이미 저장된 기본 캐시 종목들의 최근 저장일 가격 변화를 바탕으로 만든 요약입니다. 무료·API 키 불필요 원칙을 유지합니다.</p>
     <div class="footer-actions"><button type="button" class="btn-primary" onclick="runMarketDigest()">오늘의 시그널 보기</button></div>
     <div id="marketDigestStatus" class="analysis-status"></div>
@@ -714,7 +792,7 @@
 ===================================================================== */
 const STORAGE_KEY = 'myQuantPlatform.portfolio.v2';
 const ACTIVE_WORKSPACE_KEY = 'myQuantPlatform.activeWorkspace.v1';
-const DATA_VERSION = 5;
+const DATA_VERSION = 6;
 const CACHE_SCHEMA_VERSION = 2;
 const REPOSITORY_URL = 'https://github.com/darkdarkbin/MyQuantPlatform';
 const FIREBASE_SDK_VERSION = '12.16.0';
@@ -747,6 +825,15 @@ let searchDebounceTimer = null;
 const SEARCH_DEBOUNCE_MS = 160;
 const SEARCH_FREQUENCY_KEY = 'myQuantPlatform.searchFrequency.v1';
 const SEARCH_FREQUENCY_CAP = 20; /* 특정 티커 검색이 폭주해도 랭킹을 독점하지 못하도록 상한 */
+const SEARCH_ALIASES = {
+  AAPL:['애플'], MSFT:['마이크로소프트','마소'], NVDA:['엔비디아'], GOOGL:['구글','알파벳','GOOGLE'],
+  AMZN:['아마존'], META:['메타','페이스북'], TSLA:['테슬라'], AVGO:['브로드컴'], AMD:['에이엠디'],
+  'BRK-B':['BRK.B','버크셔','버크셔해서웨이'], VIG:['배당성장','뱅가드배당성장','VANGUARDDIVIDEND'],
+  IQQ:['아이큐큐','ISHARESNASDAQ100','나스닥100'], QQQ:['나스닥100'], SMH:['반도체ETF']
+};
+let researchRequestController = null;
+let researchRequestSequence = 0;
+let activeSearchResultIndex = -1;
 let firebaseServices = null;
 let cloudUser = null;
 let cloudSyncReady = false;
@@ -756,6 +843,7 @@ let cloudAuthResolved = false;
 let cloudAuthGeneration = 0;
 
 function finiteNumber(value, fallback=0){
+  if(value===null || value===undefined || value==='' || typeof value==='boolean') return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
@@ -801,7 +889,7 @@ function animateChartIn(canvas){
 }
 
 /* 모든 도넛/막대 차트가 공유하는 색상 팔레트 (기존 자산배분 도넛에서 쓰던 색을 공용화) */
-const CHART_PALETTE = ['#6C7BFF','#34D399','#F2B84B','#F87171','#38BDF8','#A78BFA','#FB923C','#4ADE80','#F472B6','#94A3B8'];
+const CHART_PALETTE = ['#3182F6','#D64545','#9A6700','#2878D8','#0E9F6E','#7C3AED','#C2410C','#0F766E','#BE185D','#6B7684'];
 
 /* [label,value] 목록을 값 내림차순으로 정렬해 상위 maxSlices개만 남기고 나머지는
  * "기타"로 합친다. 도넛차트가 항목이 너무 많아 알아보기 어려워지는 것을 방지한다. */
@@ -841,7 +929,7 @@ function drawDonutChart(canvasId,labels,values,colors){
   items.forEach((item,i)=>{
     if(x+itemWidths[i]>width-12){ x=16; y+=22; }
     ctx.fillStyle=item.color; ctx.fillRect(x,y-5,10,10);
-    ctx.fillStyle='#E7ECF7'; ctx.fillText(item.label,x+16,y);
+    ctx.fillStyle='#191F28'; ctx.fillText(item.label,x+16,y);
     x+=itemWidths[i];
   });
   animateChartIn(canvas);
@@ -862,13 +950,13 @@ function drawBacktestChart(canvasId,values,options={}){
   min-=pad; max+=pad;
   const xAt=i=>margin.left+(i/(values.length-1))*plotW;
   const yAt=v=>margin.top+((max-v)/(max-min))*plotH;
-  const lineColor = variant==='drawdown' ? '#F87171' : '#6C7BFF';
-  const fillTop = variant==='drawdown' ? 'rgba(248,113,113,.28)' : 'rgba(108,123,255,.28)';
-  const fillBottom = variant==='drawdown' ? 'rgba(248,113,113,.02)' : 'rgba(108,123,255,.02)';
+  const lineColor = variant==='drawdown' ? '#2878D8' : '#3182F6';
+  const fillTop = variant==='drawdown' ? 'rgba(40,120,216,.18)' : 'rgba(49,130,246,.18)';
+  const fillBottom = variant==='drawdown' ? 'rgba(40,120,216,.01)' : 'rgba(49,130,246,.01)';
 
   ctx.font='11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
-  ctx.fillStyle='#8B96B3';
-  ctx.strokeStyle='#2A3550'; ctx.lineWidth=1;
+  ctx.fillStyle='#6B7684';
+  ctx.strokeStyle='#E5E8EB'; ctx.lineWidth=1;
   for(let i=0;i<=4;i++){
     const y=margin.top+(plotH*i/4);
     ctx.beginPath(); ctx.moveTo(margin.left,y); ctx.lineTo(width-margin.right,y); ctx.stroke();
@@ -888,9 +976,9 @@ function drawBacktestChart(canvasId,values,options={}){
   ctx.beginPath();
   values.forEach((v,i)=>i===0?ctx.moveTo(xAt(i),yAt(v)):ctx.lineTo(xAt(i),yAt(v)));
   ctx.strokeStyle=lineColor; ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle='#E7ECF7'; ctx.font='12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.fillStyle='#191F28'; ctx.font='12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
   ctx.fillText(title,margin.left,16);
-  ctx.fillStyle='#8B96B3'; ctx.font='11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  ctx.fillStyle='#6B7684'; ctx.font='11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
   ctx.fillText('시작',margin.left,height-10);
   const endLabel='현재'; const endWidth=ctx.measureText(endLabel).width;
   ctx.fillText(endLabel,width-margin.right-endWidth,height-10);
@@ -914,14 +1002,14 @@ function drawBarChart(canvasId,labels,values,colors,options={}){
   const barWidth=Math.min(56, barGap*0.55);
 
   ctx.font='11px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
-  ctx.strokeStyle='#2A3550'; ctx.lineWidth=1;
+  ctx.strokeStyle='#E5E8EB'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(margin.left,zeroY); ctx.lineTo(width-margin.right,zeroY); ctx.stroke();
 
   values.forEach((v,i)=>{
     const cx=margin.left+barGap*i+barGap/2;
     const barH=Math.abs(v)*scale;
     const y = v>=0 ? zeroY-barH : zeroY;
-    ctx.fillStyle=colors ? colors[i] : (v>=0?'#34D399':'#F87171');
+    ctx.fillStyle=colors ? colors[i] : (v>=0?'#D64545':'#2878D8');
     const radius=Math.min(6,barWidth/2);
     // 둥근 상단 모서리를 가진 막대 (Toss류 UI에서 흔한 라운드 바)
     ctx.beginPath();
@@ -1122,7 +1210,7 @@ function staticDataUrl(path,force=false){
 }
 
 async function fetchJson(url,options={}){
-  const response = await fetch(url.toString(),{headers:{Accept:'application/json'},cache:options.force?'no-store':'default'});
+  const response = await fetch(url.toString(),{headers:{Accept:'application/json'},cache:options.force?'no-store':'default',signal:options.signal});
   let payload;
   try{ payload=await response.json(); }
   catch(error){ throw new Error('데이터 서버 응답을 읽지 못했습니다.'); }
@@ -1172,6 +1260,11 @@ function computePopularity(item, freqMap){
   return capScore*1 + volScore*1.6 + freqScore*3.2;
 }
 
+function normalizeSearchText(value){
+  return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').normalize('NFC')
+    .toUpperCase().replace(/[.\-_/·\s]+/g,'').replace(/[^0-9A-Z가-힣^]/g,'');
+}
+
 function buildSearchIndex(catalog){
   const freq=loadSearchFrequency();
   const cachedSymbols=new Set((marketManifest?.symbols || []).map(entry=>entry.symbol));
@@ -1182,7 +1275,8 @@ function buildSearchIndex(catalog){
       symbol:item.symbol, name:item.name, type:item.type, exchange:item.exchange,
       currency:item.currency, country:item.country, sector:item.sector, industry:item.industry,
       marketCap, volume, price:item.price,
-      haystack:`${item.symbol} ${item.name} ${item.sector||''} ${item.industry||''}`.toUpperCase(),
+      aliases:SEARCH_ALIASES[item.symbol] || [],
+      haystack:normalizeSearchText(`${item.symbol} ${item.name} ${item.sector||''} ${item.industry||''} ${(SEARCH_ALIASES[item.symbol]||[]).join(' ')}`),
       hasDetailCache:cachedSymbols.has(item.symbol)
     };
     entry.popularity=computePopularity(entry, freq);
@@ -1199,10 +1293,10 @@ function refreshSearchIndexDetailFlags(){
   searchIndex.forEach(entry=>{ entry.hasDetailCache=cachedSymbols.has(entry.symbol); });
 }
 
-async function loadMarketSnapshot(symbol,force=false){
+async function loadMarketSnapshot(symbol,force=false,signal=null){
   const normalized=normalizedMarketSymbol(symbol);
   if(snapshotMemory.has(normalized) && !force) return snapshotMemory.get(normalized);
-  const payload=await fetchJson(staticDataUrl(`data/market/${encodeURIComponent(normalized)}.json`,force),{force});
+  const payload=await fetchJson(staticDataUrl(`data/market/${encodeURIComponent(normalized)}.json`,force),{force,signal});
   if(payload?.schemaVersion!==CACHE_SCHEMA_VERSION || payload?.symbol!==normalized || !payload?.history?.dates?.length){
     throw new Error(`${normalized} 데이터 파일이 손상되었거나 비어 있습니다.`);
   }
@@ -1224,14 +1318,15 @@ function renderDataRequest(symbol,targetId='researchRequest'){
 
 /* 매칭 등급: 낮을수록 우선순위가 높다. 티커 완전일치 > 티커 접두 일치 > 회사명 단어 시작 일치 > 그 외 포함 */
 function matchTier(item, needle){
-  if(item.symbol===needle) return 0;
-  if(item.symbol.startsWith(needle)) return 1;
-  if(new RegExp(`(^|\\s)${needle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`).test(item.name.toUpperCase())) return 2;
+  const normalizedSymbol=normalizeSearchText(item.symbol);
+  if(normalizedSymbol===needle) return 0;
+  if(normalizedSymbol.startsWith(needle)) return 1;
+  if(normalizeSearchText(item.name).startsWith(needle) || item.aliases.some(alias=>normalizeSearchText(alias)===needle)) return 2;
   return 3;
 }
 
 function rankSearchCandidates(needle, tokens){
-  return searchIndex.filter(item=>tokens.every(token=>item.haystack.includes(token)))
+  return searchIndex.filter(item=>tokens.every(token=>item.haystack.includes(normalizeSearchText(token))))
     .map(item=>({item, tier:matchTier(item, needle)}))
     .sort((a,b)=> (a.tier-b.tier) || (b.item.popularity-a.item.popularity))
     .slice(0,12)
@@ -1247,17 +1342,19 @@ async function searchSymbols(){
   status.textContent='무료 종목 목록에서 검색하는 중입니다…'; status.className='analysis-status loading';
   try{
     await loadMarketCatalog();
-    const needle=query.toUpperCase();
-    const tokens=needle.split(/\s+/).filter(Boolean);
+    const needle=normalizeSearchText(query);
+    const tokens=query.split(/\s+/).filter(Boolean);
     const candidates=rankSearchCandidates(needle, tokens);
     lastSearchResults=candidates.map(item=>({
       symbol:item.symbol,instrument_name:item.name,instrument_type:item.type,exchange:item.exchange || 'US',currency:item.currency || 'USD',country:item.country || '',sector:item.sector || '',industry:item.industry || '',price:item.price,hasDetailCache:item.hasDetailCache
     }));
-    if(!lastSearchResults.length && /^[A-Z0-9][A-Z0-9.\-^]{0,19}$/.test(needle)){
-      lastSearchResults=[{symbol:needle,instrument_name:'캐시 생성 후 확인',instrument_type:'UNKNOWN',exchange:'',currency:'USD'}];
+    const typedSymbol=query.trim().toUpperCase().replace('.', '-');
+    if(!lastSearchResults.length && /^[A-Z0-9][A-Z0-9\-^]{0,19}$/.test(typedSymbol)){
+      lastSearchResults=[{symbol:typedSymbol,instrument_name:'캐시 생성 후 확인',instrument_type:'UNKNOWN',exchange:'',currency:'USD'}];
     }
     if(!lastSearchResults.length){ resultsEl.classList.add('hidden'); status.textContent='검색 결과가 없습니다. 미국 상장 티커 또는 회사명을 확인해 주세요.'; return; }
-    resultsEl.innerHTML=lastSearchResults.map((item,index)=>`<button type="button" class="search-result" onclick="selectSearchResult(${index})"><span><b>${escapeHtml(item.symbol)}</b> · ${escapeHtml(item.instrument_name || '')}<br><small>${escapeHtml(item.instrument_type || '')}${item.sector?` · ${escapeHtml(item.sector)}`:''}</small></span><small>${item.hasDetailCache?'⚡ 즉시 리서치 · ':''}${escapeHtml(item.exchange || '')} · ${escapeHtml(item.currency || '')}</small></button>`).join('');
+    activeSearchResultIndex=0;
+    resultsEl.innerHTML=lastSearchResults.map((item,index)=>`<button type="button" class="search-result" data-search-index="${index}" role="option" aria-selected="${index===0}" onclick="selectSearchResult(${index})"><span><b>${escapeHtml(item.symbol)}</b> · ${escapeHtml(item.instrument_name || '')}<br><small>${escapeHtml(item.instrument_type || '')}${item.sector?` · ${escapeHtml(item.sector)}`:''}</small></span><small>${item.hasDetailCache?'즉시 리서치 · ':''}${escapeHtml(item.exchange || '거래소 정보 없음')} · ${escapeHtml(item.currency || '')}</small></button>`).join('');
     resultsEl.classList.remove('hidden'); status.textContent=`${lastSearchResults.length}개 결과 · API 호출 0회`;
     status.className='analysis-status success';
   }catch(error){ resultsEl.classList.add('hidden'); status.textContent='종목 목록을 읽지 못했습니다. GitHub Pages 배포가 완료됐는지 확인해 주세요.'; status.className='analysis-status error'; }
@@ -1307,11 +1404,83 @@ function fmtRatio(value,multiplier=1,suffix=''){
 
 function fmtResearchValue(value,kind='number'){
   const number=finiteNumber(value,NaN);
-  if(!Number.isFinite(number)) return '-';
+  if(!Number.isFinite(number)) return '정보 없음';
   if(kind==='money') return fmtCompact(number,'USD');
   if(kind==='price') return `$${number.toLocaleString('en-US',{maximumFractionDigits:2})}`;
   if(kind==='percent') return `${(number*100).toLocaleString('ko-KR',{maximumFractionDigits:2})}%`;
+  if(kind==='volume') return `${Math.round(number).toLocaleString('ko-KR')}주`;
   return number.toLocaleString('ko-KR',{maximumFractionDigits:2});
+}
+
+function computeOwnPriceStats(snapshot){
+  const prices=(snapshot?.history?.close || []).map(value=>finiteNumber(value,NaN)).filter(value=>Number.isFinite(value)&&value>0);
+  const dates=snapshot?.history?.dates || [];
+  if(prices.length<2 || dates.length!==prices.length) return null;
+  const elapsedYears=(Date.parse(dates.at(-1))-Date.parse(dates[0]))/86400000/365.25;
+  const cumulative=prices.at(-1)/prices[0]-1;
+  const cagr=elapsedYears>=0.8?Math.pow(prices.at(-1)/prices[0],1/elapsedYears)-1:null;
+  const ratios=prices.length>=60?riskAdjustedRatios(prices,3):{sharpe:null,sortino:null};
+  return {
+    cumulative,cagr,volatility:prices.length>=20?annualizedVolatility(prices):null,mdd:calcMDD(prices),
+    sharpe:ratios.sharpe,sortino:ratios.sortino,points:prices.length,elapsedYears
+  };
+}
+
+function renderResearchHero(snapshot){
+  const quote=snapshot.quote || {}, price=finiteNumber(quote.price,NaN), previous=finiteNumber(quote.previousClose,NaN);
+  const change=Number.isFinite(price)&&Number.isFinite(previous)?price-previous:NaN;
+  const changePct=Number.isFinite(change)&&previous?change/previous*100:NaN;
+  const size=snapshot.type==='ETF'?snapshot.etf?.aum:quote.marketCap;
+  document.getElementById('researchHero').innerHTML=`<div><div class="hero-meta"><span>${escapeHtml(snapshot.exchange || '거래소 정보 없음')}</span><span>${escapeHtml(snapshot.type || '자산 유형 정보 없음')}</span><span>${escapeHtml(snapshot.currency || '통화 정보 없음')}</span></div><div class="hero-price">${escapeHtml(fmtResearchValue(price,'price'))}</div><div class="${changePct>=0?'pos':'neg'}">${Number.isFinite(change)?`${change>=0?'▲':'▼'} ${Math.abs(change).toFixed(2)} (${Math.abs(changePct).toFixed(2)}%)`:'전일 대비 정보 없음'}</div><div class="hero-actions"><button type="button" class="btn-primary btn-sm" onclick="useResearchInForm()">포트폴리오 추가</button><button type="button" class="btn-ghost btn-sm" onclick="addResearchToCompare()">비교하기</button><button type="button" class="btn-ghost btn-sm" onclick="toggleWatchlist()">관심종목</button></div></div><div class="metric-grid" style="margin:0;"><div class="metric"><div class="k">${snapshot.type==='ETF'?'순자산총액':'시가총액'}</div><div class="v">${escapeHtml(fmtResearchValue(size,'money'))}</div></div><div class="metric"><div class="k">당일 거래량</div><div class="v">${escapeHtml(fmtResearchValue(quote.volume,'volume'))}</div></div><div class="metric"><div class="k">평균 거래량</div><div class="v">${escapeHtml(fmtResearchValue(quote.averageVolume,'volume'))}</div></div><div class="metric"><div class="k">가격 기준일</div><div class="v">${escapeHtml(snapshot.dataDate || '정보 없음')}</div></div></div>`;
+  const status=snapshot.dataStatus || {};
+  const liquidity=snapshot.liquidity || {};
+  const liquidityText=Number.isFinite(finiteNumber(liquidity.value,NaN))?`${liquidity.basis}: ${Math.round(liquidity.value).toLocaleString('ko-KR')}주 · 100만 기준 ${liquidity.qualifies?'충족':'미충족'}`:'거래량 기준 정보 없음';
+  document.getElementById('researchDataState').innerHTML=`<div class="data-state">${status.history==='short'?'상장 이력이 짧아 일부 기간 계산 불가':'마지막 정상 데이터 표시 중'} · ${escapeHtml(liquidityText)} · 최근 업데이트: ${escapeHtml(String(snapshot.updatedAt||'정보 없음').replace('T',' ').slice(0,16))}</div>`;
+}
+
+function renderResearchOverview(snapshot){
+  const e=snapshot.etf || {};
+  const fields=snapshot.type==='ETF'
+    ? [['운용사',e.provider],['추적지수',e.benchmarkIndex],['상장일',e.inceptionDate],['자산군',e.assetClass],['투자전략',e.strategy],['분배 주기',e.distributionFrequency],['상장 거래소',snapshot.exchange],['통화',snapshot.currency],['레버리지',e.leveraged===true?'예':'아니오'],['커버드콜',e.coveredCall===true?'예':'아니오'],['액티브',e.active===true?'예':'아니오'],['환헤지',e.currencyHedged===true?'예':'아니오']]
+    : [['섹터',snapshot.sector],['산업',snapshot.industry],['본사 지역',snapshot.region],['웹사이트',snapshot.website],['설명',snapshot.description]];
+  document.getElementById('researchOverview').innerHTML=fields.map(([label,value])=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;"><span>${label}</span><b style="text-align:right;">${escapeHtml(value || '정보 없음')}</b></div>`).join('');
+}
+
+function renderResearchCompetitors(snapshot){
+  const el=document.getElementById('researchCompetitors');
+  if(!searchIndex){ el.textContent='검색 인덱스 준비 중'; return; }
+  const peers=searchIndex.filter(item=>item.symbol!==snapshot.symbol && item.type===snapshot.type && snapshot.sector && item.sector===snapshot.sector)
+    .sort((a,b)=>b.marketCap-a.marketCap).slice(0,5);
+  if(!peers.length){ el.textContent='분류 가능한 경쟁·대체 관계 정보 없음'; return; }
+  el.innerHTML=`<div class="note" style="margin:0 0 8px;">동일 섹터 기반 유사 기업입니다. 직접 경쟁 여부는 사업 구조를 추가 확인하세요.</div>${peers.map(item=>`<button type="button" class="btn-ghost btn-sm" style="width:100%;margin:4px 0;text-align:left;" onclick="openResearchSymbol('${escapeHtml(item.symbol)}')">${escapeHtml(item.name)} · ${escapeHtml(item.symbol)}</button>`).join('')}`;
+}
+
+async function openResearchSymbol(symbol){
+  currentResearch={symbol,name:symbol,currency:'USD',exchange:'',instrumentType:'',country:'',sector:'',industry:'',price:null};
+  document.getElementById('researchPanel').classList.add('open');
+  document.getElementById('researchSymbol').textContent=symbol;
+  await loadResearch(symbol);
+}
+
+function renderBuffettQuestions(snapshot){
+  const years=snapshot.financials?.years || [], latest=years[0] || {}, moat=moatRating(snapshot);
+  const items=snapshot.type==='ETF'?[
+    ['지금 돈을 버는가?','판단 보류','ETF는 기업 영업이익 평가 대상이 아닙니다.'],
+    ['경쟁자가 따라오기 어려운가?','판단 보류','ETF 상품 경쟁력은 추적오차·비용·유동성 자료가 더 필요합니다.'],
+    ['10년 후에도 작동할 사업인가?','판단 보류','기초지수 방법론과 운용 지속성은 공식 문서를 함께 확인해야 합니다.']
+  ]:[
+    ['지금 돈을 버는가?',finiteNumber(latest.netIncome,NaN)>0&&finiteNumber(latest.freeCashFlow,NaN)>0?'예':Number.isFinite(finiteNumber(latest.netIncome,NaN))?'아니오':'판단 보류',`순이익 ${fmtResearchValue(latest.netIncome,'money')} · FCF ${fmtResearchValue(latest.freeCashFlow,'money')}`],
+    ['경쟁자가 따라오기 어려운가?',moat.stars>=4?'예':moat.stars>=3?'보통':moat.stars?'아니오':'판단 보류',moat.reasons.join(' · ')],
+    ['10년 후에도 작동할 사업인가?',yearsCagr(years,'revenue')>0&&finiteNumber(latest.freeCashFlow,NaN)>0?'보통':'판단 보류',`매출 CAGR ${Number.isFinite(yearsCagr(years,'revenue'))?yearsCagr(years,'revenue').toFixed(1)+'%':'정보 없음'} · 장기 사업 지속성은 정량 데이터만으로 단정할 수 없습니다.`]
+  ];
+  document.getElementById('researchBuffett').innerHTML=items.map(([q,a,reason])=>`<div class="subpanel"><div class="k">${escapeHtml(q)}</div><div class="v" style="font-size:20px;font-weight:600;margin:6px 0;">${escapeHtml(a)}</div><div class="note" style="margin:0;">${escapeHtml(reason)}<br>주요 반론·위험은 산업 변화와 경쟁 심화입니다.</div></div>`).join('');
+}
+
+function renderResearchPrice(snapshot){
+  const prices=snapshot.history?.close || [];
+  const stats=computeOwnPriceStats(snapshot);
+  if(prices.length>1) drawBacktestChart('researchPriceChart',prices,{title:`${snapshot.symbol} 저장 종가 · ${snapshot.currency || ''}`,variant:'growth'});
+  document.getElementById('researchPriceNote').textContent=stats?`${stats.points}개 거래일 · 가격수익률 기준 · 배당/환율/수수료/세금 미반영 · 장기 지표는 충분한 이력이 있을 때만 계산`:'가격 이력 정보 없음';
 }
 
 /* ROIC(투하자본이익률) 근사치. 실제 세후영업이익(NOPAT)과 투하자본 원문이 무료 소스에는
@@ -1334,6 +1503,7 @@ function computeRoic(snapshot){
 function renderResearchMetrics(snapshot){
   const quote=snapshot.quote || {}, valuation=snapshot.valuation || {}, profitability=snapshot.profitability || {}, health=snapshot.financialHealth || {};
   const roic=computeRoic(snapshot);
+  const ownStats=computeOwnPriceStats(snapshot);
   const stockMetrics=[
     ['현재가',fmtResearchValue(quote.price,'price')],['시가총액',fmtResearchValue(quote.marketCap,'money')],
     ['PER (최근 4분기 EPS)',fmtResearchValue(valuation.pe)],['PBR (최근 연차)',fmtResearchValue(valuation.pbr)],['PSR (최근 연차)',fmtResearchValue(valuation.psr)],
@@ -1341,12 +1511,13 @@ function renderResearchMetrics(snapshot){
     ['ROIC (세율 21% 가정 추정)',Number.isFinite(roic)?fmtPct(roic*100):'정보 없음'],
     ['영업이익률',fmtResearchValue(profitability.operatingMargin,'percent')],['순이익률',fmtResearchValue(profitability.netMargin,'percent')],
     ['총부채',fmtResearchValue(health.totalDebt,'money')],['현금·단기투자',fmtResearchValue(health.totalCash,'money')],['잉여현금흐름',fmtResearchValue(health.freeCashFlow,'money')],
-    ['52주 최고가',fmtResearchValue(quote.high52,'price')],['52주 최저가',fmtResearchValue(quote.low52,'price')],['거래량',fmtResearchValue(quote.volume)],['배당수익률',fmtResearchValue(quote.dividendYield,'percent')]
+    ['52주 최고가',fmtResearchValue(quote.high52,'price')],['52주 최저가',fmtResearchValue(quote.low52,'price')],['거래량',fmtResearchValue(quote.volume,'volume')],['배당수익률',fmtResearchValue(quote.dividendYield,'percent')]
   ];
   const etfMetrics=[
     ['현재가',fmtResearchValue(quote.price,'price')],['AUM',fmtResearchValue(snapshot.etf?.aum,'money')],['총보수',fmtResearchValue(snapshot.etf?.expenseRatio,'percent')],['배당수익률',fmtResearchValue(snapshot.etf?.yield,'percent')],
     ['베타',fmtResearchValue(quote.beta)],['시가총액',fmtResearchValue(quote.marketCap,'money')],['52주 최고가',fmtResearchValue(quote.high52,'price')],['52주 최저가',fmtResearchValue(quote.low52,'price')],
-    ['거래량',fmtResearchValue(quote.volume)],['평균 거래량',fmtResearchValue(quote.averageVolume)],['1개월 수익률',fmtResearchValue(snapshot.periods?.['1m']?.return,'percent')],['3개월 수익률',fmtResearchValue(snapshot.periods?.['3m']?.return,'percent')],['6개월 수익률',fmtResearchValue(snapshot.periods?.['6m']?.return,'percent')],['1년 수익률',fmtResearchValue(snapshot.periods?.['1y']?.return,'percent')]
+    ['거래량',fmtResearchValue(quote.volume,'volume')],['평균 거래량',fmtResearchValue(quote.averageVolume,'volume')],['1개월 수익률',fmtResearchValue(snapshot.periods?.['1m']?.return,'percent')],['3개월 수익률',fmtResearchValue(snapshot.periods?.['3m']?.return,'percent')],['6개월 수익률',fmtResearchValue(snapshot.periods?.['6m']?.return,'percent')],['1년 수익률',fmtResearchValue(snapshot.periods?.['1y']?.return,'percent')]
+    ,['전체 기간 CAGR',Number.isFinite(ownStats?.cagr)?fmtPct(ownStats.cagr*100):'상장 이력이 짧아 계산 불가'],['연율화 변동성',Number.isFinite(ownStats?.volatility)?fmtPct(ownStats.volatility):'상장 이력이 짧아 계산 불가'],['최대낙폭',Number.isFinite(ownStats?.mdd)?fmtPct(ownStats.mdd):'상장 이력이 짧아 계산 불가'],['Sharpe (무위험 3%)',Number.isFinite(ownStats?.sharpe)?ownStats.sharpe.toFixed(2):'상장 이력이 짧아 계산 불가'],['Sortino (무위험 3%)',Number.isFinite(ownStats?.sortino)?ownStats.sortino.toFixed(2):'상장 이력이 짧아 계산 불가']
   ];
   const metrics=snapshot.type==='ETF'?etfMetrics:stockMetrics;
   document.getElementById('researchMetrics').innerHTML=metrics.map(([key,value])=>`<div class="metric"><div class="k">${key}</div><div class="v">${escapeHtml(value)}</div></div>`).join('');
@@ -1363,6 +1534,10 @@ function renderResearchPeriods(snapshot){
 }
 
 function renderResearchAnalyst(snapshot){
+  if(snapshot.type==='ETF'){
+    document.getElementById('researchAnalyst').innerHTML='ETF에는 개별 기업 애널리스트 목표가를 적용하지 않습니다.';
+    return;
+  }
   const item=snapshot.analyst || {}, current=finiteNumber(snapshot.quote?.price,NaN), target=finiteNumber(item.targetMean,NaN);
   if(!Number.isFinite(target)){
     document.getElementById('researchAnalyst').innerHTML='제공되는 애널리스트 목표가가 없습니다. ETF에서는 목표가가 없는 것이 정상입니다.';
@@ -1398,7 +1573,7 @@ function renderResearchFinancials(snapshot){
 
 function snapshotToEtfDetail(snapshot){
   if(snapshot.type!=='ETF' || !snapshot.etf) return null;
-  return {info:{expenseRatio:snapshot.etf.expenseRatio,aum:snapshot.etf.aum},holdings:(snapshot.etf.topHoldings || []).map(item=>({...item,weight:finiteNumber(item.weight)})),sectors:(snapshot.etf.sectorWeights || []).map(item=>({...item,weight:finiteNumber(item.weight)})),countries:[],coverage:finiteNumber(snapshot.etf.holdingsCoverage),fetchedAt:snapshot.updatedAt};
+  return {info:{...snapshot.etf,expenseRatio:snapshot.etf.expenseRatio,aum:snapshot.etf.aum},holdings:(snapshot.etf.topHoldings || []).map(item=>({...item,weight:finiteNumber(item.weight)})),sectors:(snapshot.etf.sectorWeights || []).map(item=>({...item,weight:finiteNumber(item.weight)})),countries:snapshot.etf.countryWeights || [],coverage:finiteNumber(snapshot.etf.holdingsCoverage),fetchedAt:snapshot.updatedAt};
 }
 
 async function loadEtfDetails(symbol){
@@ -1415,7 +1590,7 @@ function renderResearchEtf(detail){
   const expense=deepValue(info,['expenseRatio','expense_ratio']);
   const aum=deepValue(info,['aum','assetsUnderManagement','assetUnderManagement']);
   const top=detail.holdings.slice(0,10);
-  el.innerHTML=`${expense!==null?`총보수 ${escapeHtml(fmtRatio(expense,100,'%'))}<br>`:''}${aum!==null?`운용자산 ${escapeHtml(fmtCompact(aum,'USD'))}<br>`:''}
+  el.innerHTML=`${info.provider?`운용사 ${escapeHtml(info.provider)}<br>`:''}${info.benchmarkIndex?`추적지수 ${escapeHtml(info.benchmarkIndex)}<br>`:''}${info.inceptionDate?`상장일 ${escapeHtml(info.inceptionDate)}<br>`:''}${expense!==null?`총보수 ${escapeHtml(fmtRatio(expense,100,'%'))}<br>`:''}${Number.isFinite(finiteNumber(info.netExpenseRatio,NaN))?`순보수 ${escapeHtml(fmtRatio(info.netExpenseRatio,100,'%'))}<br>`:''}${aum!==null?`운용자산 ${escapeHtml(fmtCompact(aum,'USD'))}<br>`:''}${Number.isFinite(finiteNumber(info.spread,NaN))?`중앙 스프레드 ${escapeHtml(fmtRatio(info.spread,100,'%'))}<br>`:''}
     ${top.length?`<br><b>상위 보유종목</b><br>${top.map(item=>`${escapeHtml(item.symbol)} ${item.weight.toFixed(2)}%`).join(' · ')}`:''}
     ${detail.sectors.length?`<br><br><b>상위 섹터(상위 종목 기준)</b><br>${detail.sectors.slice(0,6).map(item=>`${escapeHtml(item.name)} ${item.weight.toFixed(1)}%`).join(' · ')}`:''}
     <div class="note">표시 구성의 합계 ${finiteNumber(detail.coverage).toFixed(1)}%. 전체 보유종목이 아닌 공개된 상위 구성 기준입니다.</div>`;
@@ -1582,14 +1757,39 @@ function ruleBasedCompanySummary(snapshot){
   return {oneLiner, summary:summaryParts.join(' '), bullets:{strengths, weaknesses, risks}, score:score.total};
 }
 
+function resetResearchPanels(){
+  ['researchDataState','researchHero','researchMetrics','researchPeriods','researchAnalyst','researchEvents','researchFinancials','researchEtf','researchMoat','researchFairValue','researchOverview','researchCompetitors','researchBuffett','researchSources'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML='';
+  });
+  document.getElementById('researchDescription').textContent='';
+  document.getElementById('researchAiSummary').textContent='데이터를 확인하는 중입니다.';
+  document.getElementById('researchAiBadge').textContent='규칙 기반';
+  document.getElementById('researchPriceNote').textContent='가격 이력을 확인하는 중입니다.';
+  const badge=document.getElementById('researchScoreBadge');
+  badge.style.display='none';
+  badge.textContent='';
+  const canvas=document.getElementById('researchPriceChart');
+  if(canvas){
+    const context=canvas.getContext('2d');
+    if(typeof context?.clearRect==='function') context.clearRect(0,0,canvas.width,canvas.height);
+  }
+}
+
 async function loadResearch(symbol,force=false){
+  const sequence=++researchRequestSequence;
+  if(researchRequestController) researchRequestController.abort();
+  researchRequestController=new AbortController();
   const loading=document.getElementById('researchLoading');
+  resetResearchPanels();
   document.getElementById('researchRequest').innerHTML='';
   loading.textContent='무료 저장 데이터에서 리서치 정보를 불러오는 중입니다…'; loading.className='analysis-status loading';
   try{
-    const snapshot=await loadMarketSnapshot(symbol,force);
+    const snapshot=await loadMarketSnapshot(symbol,force,researchRequestController.signal);
+    if(sequence!==researchRequestSequence) return;
     currentResearch={...currentResearch,symbol:snapshot.symbol,name:snapshot.name,currency:snapshot.currency || 'USD',exchange:snapshot.exchange || '',instrumentType:snapshot.type,sector:snapshot.sector || '',industry:snapshot.industry || '',price:snapshot.quote?.price,snapshot};
     document.getElementById('researchName').textContent=`${snapshot.name} · ${snapshot.exchange || 'US'} · ${snapshot.type}${snapshot.sector?` · ${snapshot.sector}`:''}`;
+    renderResearchHero(snapshot);
     renderResearchMetrics(snapshot);
     const intro=snapshot.type==='ETF'?`${snapshot.name}는 ${snapshot.symbol} 티커로 거래되는 ETF입니다. 아래 보유종목·보수·AUM과 운용사 공식 정보를 함께 확인하세요.`:`${snapshot.name}는 ${snapshot.sector || '미분류'} 섹터의 ${snapshot.industry || '산업 미분류'} 기업입니다.`;
     document.getElementById('researchDescription').textContent=`${intro}${snapshot.description?` ${snapshot.description}`:''}`;
@@ -1599,12 +1799,23 @@ async function loadResearch(symbol,force=false){
     renderResearchScoreBadge(snapshot);
     renderResearchMoat(snapshot);
     renderResearchFairValue(snapshot);
+    renderResearchOverview(snapshot);
+    renderResearchCompetitors(snapshot);
+    renderBuffettQuestions(snapshot);
+    renderResearchPrice(snapshot);
     await renderResearchAiSummary(snapshot);
     updateWatchlistButton(snapshot.symbol);
     document.getElementById('researchSources').innerHTML=`<span class="freshness">기준 ${escapeHtml(snapshot.dataDate || '-')} · 저장 ${escapeHtml(String(snapshot.updatedAt || '').slice(0,10))}</span>${(snapshot.sources || []).map(source=>`<a class="source-pill" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.name)} ↗</a>`).join('')}`;
     loading.textContent='리서치 정보 불러오기 완료 · 유료 API 호출 0회'; loading.className='analysis-status success';
   }catch(error){
-    ['researchMetrics','researchPeriods','researchAnalyst','researchEvents','researchFinancials','researchEtf','researchSources'].forEach(id=>document.getElementById(id).innerHTML='');
+    if(error?.name==='AbortError' || sequence!==researchRequestSequence) return;
+    resetResearchPanels();
+    document.getElementById('researchAiSummary').textContent='분석할 저장 데이터가 없습니다.';
+    document.getElementById('researchMoat').textContent='판단할 데이터가 없습니다.';
+    document.getElementById('researchFairValue').textContent='계산할 데이터가 없습니다.';
+    document.getElementById('researchOverview').textContent='정보 없음';
+    document.getElementById('researchCompetitors').textContent='정보 없음';
+    document.getElementById('researchPriceNote').textContent='가격 이력 정보 없음';
     document.getElementById('researchDescription').textContent='아직 이 티커의 상세 데이터 파일이 없습니다.';
     loading.textContent=error.code==='CACHE_MISS'?'최초 데이터 생성이 필요합니다.':'저장 데이터를 읽지 못했습니다.'; loading.className='analysis-status error';
     renderDataRequest(symbol);
@@ -2430,6 +2641,10 @@ function calculateRiskAnalysis(statusPrefix=''){
   document.getElementById('riskEmptyMsg').style.display = 'none';
   lastBacktestSeries = portfolioIndex;
   lastRiskDates = aligned.dates;
+  if(aligned.dates.length){
+    if(!document.getElementById('dcaStartDate').value) document.getElementById('dcaStartDate').value=aligned.dates[0];
+    if(!document.getElementById('dcaEndDate').value) document.getElementById('dcaEndDate').value=aligned.dates.at(-1);
+  }
   persistState();
   drawBacktestChart('backtestChart',portfolioIndex);
   if(document.getElementById('drawdownChart')) drawBacktestChart('drawdownChart',drawdownSeries,{title:'낙폭(전고점 대비 %)',variant:'drawdown'});
@@ -2558,6 +2773,65 @@ async function buildFundamentalsComparisonHtml(symbols){
   const header=symbols.map(symbol=>`<th>${escapeHtml(symbol)}</th>`).join('');
   const rows=rowsDef.map(row=>`<tr><th>${row.label}</th>${snapshots.map(snapshot=>`<td>${snapshot && snapshot.type!=='ETF' ? row.fmt(finiteNumber(row.get(snapshot),NaN)) : '-'}</td>`).join('')}</tr>`).join('');
   return `<div class="scroll-table" style="margin-top:14px;"><table><thead><tr><th>펀더멘털</th>${header}</tr></thead><tbody>${rows}</tbody></table></div><div class="note">ETF는 기업 펀더멘털 지표 대상이 아니라 '-'로 표시됩니다. 최근 저장된 캐시 기준입니다.</div>`;
+}
+
+function parsePortfolioSpec(value){
+  const entries=String(value||'').split(',').map(part=>part.trim()).filter(Boolean).map(part=>{
+    const [rawSymbol,rawWeight]=part.split(':');
+    return {symbol:normalizedMarketSymbol(rawSymbol),weight:finiteNumber(rawWeight,NaN)};
+  });
+  if(!entries.length || entries.some(item=>!Number.isFinite(item.weight)||item.weight<=0)) throw new Error('포트폴리오 형식은 VOO:70,VIG:30처럼 입력해 주세요.');
+  const total=entries.reduce((sum,item)=>sum+item.weight,0);
+  return entries.map(item=>({...item,weight:item.weight/total}));
+}
+
+function portfolioIndexFromAligned(spec,symbols,alignedPrices){
+  return alignedPrices[0].map((_,day)=>spec.reduce((sum,item)=>{
+    const index=symbols.indexOf(item.symbol), prices=alignedPrices[index];
+    return sum+(prices[day]/prices[0]*100)*item.weight;
+  },0));
+}
+
+function flattenSpecExposure(spec,snapshotMap){
+  const totals=new Map();
+  spec.forEach(item=>{
+    const snapshot=snapshotMap.get(item.symbol);
+    const holdingsList=snapshot?.type==='ETF'?(snapshot.etf?.topHoldings||[]):[];
+    if(holdingsList.length){
+      holdingsList.forEach(holding=>totals.set(holding.symbol,(totals.get(holding.symbol)||0)+item.weight*finiteNumber(holding.weight)));
+    }else totals.set(item.symbol,(totals.get(item.symbol)||0)+item.weight*100);
+  });
+  return [...totals.entries()].sort((a,b)=>b[1]-a[1]);
+}
+
+function portfolioMetrics(index,dates,riskFree){
+  const elapsed=Math.max((Date.parse(dates.at(-1))-Date.parse(dates[0]))/86400000/365.25,1/252);
+  const ratios=riskAdjustedRatios(index,riskFree);
+  return {cumulative:index.at(-1)-100,cagr:(Math.pow(index.at(-1)/100,1/elapsed)-1)*100,volatility:annualizedVolatility(index),mdd:calcMDD(index),...ratios};
+}
+
+async function runPortfolioABComparison(){
+  const status=document.getElementById('portfolioABStatus'), result=document.getElementById('portfolioABResult'), button=document.getElementById('abRunBtn');
+  button.disabled=true; status.textContent='두 포트폴리오의 동일 거래일을 정렬하는 중입니다…'; status.className='analysis-status loading';
+  try{
+    const a=parsePortfolioSpec(document.getElementById('portfolioASpec').value), b=parsePortfolioSpec(document.getElementById('portfolioBSpec').value);
+    const symbols=[...new Set([...a,...b].map(item=>item.symbol))];
+    const snapshots=await Promise.all(symbols.map(symbol=>loadMarketSnapshot(symbol)));
+    const snapshotMap=new Map(snapshots.map(snapshot=>[snapshot.symbol,snapshot]));
+    const aligned=alignNamedSeries(snapshots.map(snapshot=>({dates:snapshot.history.dates,prices:snapshot.history.close})));
+    const indexA=portfolioIndexFromAligned(a,symbols,aligned.prices), indexB=portfolioIndexFromAligned(b,symbols,aligned.prices);
+    const riskFree=Math.max(0,finiteNumber(document.getElementById('riskFreeRate').value,3));
+    const metricsA=portfolioMetrics(indexA,aligned.dates,riskFree), metricsB=portfolioMetrics(indexB,aligned.dates,riskFree);
+    const exposureA=flattenSpecExposure(a,snapshotMap), exposureB=flattenSpecExposure(b,snapshotMap);
+    const exposureMapB=new Map(exposureB);
+    const shared=exposureA.reduce((sum,[symbol,weight])=>sum+Math.min(weight,exposureMapB.get(symbol)||0),0);
+    const rows=[['누적수익률','cumulative','%'],['CAGR','cagr','%'],['변동성','volatility','%'],['MDD','mdd','%'],['Sharpe','sharpe',''],['Sortino','sortino','']].map(([label,key,unit])=>`<tr><th>${label}</th><td>${Number.isFinite(metricsA[key])?metricsA[key].toFixed(2)+unit:'계산 불가'}</td><td>${Number.isFinite(metricsB[key])?metricsB[key].toFixed(2)+unit:'계산 불가'}</td></tr>`).join('');
+    result.className='';
+    result.innerHTML=`<div class="scroll-table"><table><thead><tr><th>동일 기간 지표</th><th>A</th><th>B</th></tr></thead><tbody>${rows}<tr><th>상위 5 실질 노출</th><td>${exposureA.slice(0,5).reduce((s,x)=>s+x[1],0).toFixed(1)}%</td><td>${exposureB.slice(0,5).reduce((s,x)=>s+x[1],0).toFixed(1)}%</td></tr></tbody></table></div><div class="chart-wrap-sm" style="margin-top:14px;"><canvas id="portfolioABChart"></canvas></div><div class="note">공통 거래일 ${aligned.dates[0]} ~ ${aligned.dates.at(-1)} · ${aligned.dates.length}개 · A/B 실질 종목 공통 노출 ${shared.toFixed(1)}% · 가격수익률, 배당/환율/세금 미반영. 구성종목은 공개된 상위 보유분만 반영됩니다.</div>`;
+    drawBacktestChart('portfolioABChart',indexA,{title:'포트폴리오 A 누적 지수',variant:'growth'});
+    status.textContent='A/B 비교 완료'; status.className='analysis-status success';
+  }catch(error){ result.className='error-box'; result.textContent=friendlyMarketError(error); status.textContent='비교 실패'; status.className='analysis-status error'; }
+  finally{ button.disabled=false; }
 }
 
 /* =====================================================================
@@ -2709,6 +2983,41 @@ function ruleBasedPortfolioCoach(data){
   return {oneLiner, summary, bullets:{strengths:tips.filter(t=>t.tag==='good').map(t=>t.text), weaknesses:[], risks:tips.filter(t=>t.tag!=='good').map(t=>t.text)}, score:null, tips};
 }
 
+function computePortfolioHealth(topExposure,sectorRows,overlaps,countryExposure){
+  const weights=topExposure.map(([,weight])=>weight).sort((a,b)=>b-a);
+  const top1=weights[0]||0, top5=weights.slice(0,5).reduce((a,b)=>a+b,0);
+  const maxSector=sectorRows[0]?.[1]||0, maxCountry=countryExposure[0]?.[1]||0;
+  const maxOverlap=Math.max(0,...overlaps.map(item=>item.value));
+  const cash=Math.max(0,100-holdings.reduce((sum,item)=>sum+finiteNumber(item.targetWeight),0));
+  const volatility=lastBacktestSeries.length?annualizedVolatility(lastBacktestSeries):null;
+  const mdd=lastBacktestSeries.length?calcMDD(lastBacktestSeries):null;
+  const deductions=[
+    ['단일 종목 집중',Math.min(18,Math.max(0,(top1-20)*.7)),`${top1.toFixed(1)}%`],
+    ['상위 5종목 편중',Math.min(12,Math.max(0,(top5-55)*.35)),`${top5.toFixed(1)}%`],
+    ['ETF 중복',Math.min(12,Math.max(0,(maxOverlap-25)*.3)),`${maxOverlap.toFixed(1)}%`],
+    ['섹터 집중',Math.min(12,Math.max(0,(maxSector-30)*.35)),`${maxSector.toFixed(1)}%`],
+    ['국가 집중',Math.min(8,Math.max(0,(maxCountry-75)*.25)),`${maxCountry.toFixed(1)}%`],
+    ['변동성',Number.isFinite(volatility)?Math.min(10,Math.max(0,(volatility-18)*.5)):0,Number.isFinite(volatility)?`${volatility.toFixed(1)}%`:'미계산'],
+    ['최대낙폭',Number.isFinite(mdd)?Math.min(10,Math.max(0,(-mdd-18)*.4)):0,Number.isFinite(mdd)?`${mdd.toFixed(1)}%`:'미계산'],
+    ['자산 수',holdings.length<4?(4-holdings.length)*2:0,`${holdings.length}개`],
+    ['현금 비중',cash<2?2:cash>30?4:0,`${cash.toFixed(1)}%`]
+  ];
+  const score=Math.max(0,Math.round(100-deductions.reduce((sum,item)=>sum+item[1],0)));
+  const warnings=deductions.filter(item=>item[1]>=2).sort((a,b)=>b[1]-a[1]);
+  const strengths=[];
+  if(top1<=20) strengths.push('단일 종목 비중이 20% 이하입니다.');
+  if(maxOverlap<=25) strengths.push('ETF 간 최대 중복이 25% 이하입니다.');
+  if(maxSector<=30) strengths.push('단일 섹터 비중이 30% 이하입니다.');
+  if(holdings.length>=5) strengths.push('보유 자산 수가 5개 이상입니다.');
+  return {score,deductions,warnings,strengths,top1,top5,maxOverlap,maxSector,maxCountry,cash,volatility,mdd};
+}
+
+function renderPortfolioHealth(health){
+  const grade=health.score>=85?'양호':health.score>=70?'보통':'주의';
+  document.getElementById('portfolioHealthResult').className='';
+  document.getElementById('portfolioHealthResult').innerHTML=`<div class="health-score">${health.score}<span style="font-size:16px;color:var(--text-dim);"> / 100 · ${grade}</span></div><div class="health-breakdown">${health.deductions.map(([label,deduction,value])=>`<div class="metric"><div class="k">${escapeHtml(label)} · 감점 ${deduction.toFixed(1)}</div><div class="v">${escapeHtml(value)}</div></div>`).join('')}</div><div class="mini-grid" style="margin-top:12px;"><div><b>강점</b><div class="note" style="margin-top:5px;">${(health.strengths.length?health.strengths:['현재 기준에서 뚜렷한 강점 신호가 없습니다.']).map(item=>`· ${escapeHtml(item)}`).join('<br>')}</div></div><div><b>주의·개선 아이디어</b><div class="note" style="margin-top:5px;">${(health.warnings.length?health.warnings.map(([label,,value])=>`${label} ${value}: 신규 자금은 이 노출과 상관이 낮은 자산을 검토하세요.`):['뚜렷한 과집중 경고가 없습니다.']).map(item=>`· ${escapeHtml(item)}`).join('<br>')}</div></div></div><div class="note">배점은 100점에서 단일종목 18, 상위5 12, ETF중복 12, 섹터 12, 국가 8, 변동성 10, MDD 10, 자산수 8, 현금 4점까지 감점합니다. 가격 분석 전에는 변동성·MDD 감점을 적용하지 않습니다.</div>`;
+}
+
 async function runPortfolioDiagnostics(){
   const status=document.getElementById('diagnosticsStatus');
   if(!holdings.length){ status.textContent='포트폴리오 종목을 먼저 추가해 주세요.'; status.className='analysis-status error'; return; }
@@ -2717,6 +3026,7 @@ async function runPortfolioDiagnostics(){
     const {topExposure, sectorRows, overlaps}=await computeExposureAnalysis();
     const themeExposure=computeThemeExposure(topExposure);
     const countryExposure=computeCountryExposure(topExposure);
+    renderPortfolioHealth(computePortfolioHealth(topExposure,sectorRows,overlaps,countryExposure));
     document.getElementById('themeExposureResult').innerHTML=`<div class="donut-wrap chart-wrap-sm"><canvas id="themeDonutChart"></canvas></div>`
       +themeExposure.map(t=>`<span class="theme-chip"><b>${escapeHtml(t.theme)}</b> ${t.weight.toFixed(1)}%</span>`).join('')
       +'<div class="note" style="margin-top:8px;">사전 정의된 대표 종목 리스트 기준(정기 수동 갱신)이며, 실시간 자동 분류가 아닙니다.</div>';
@@ -2776,22 +3086,38 @@ function runPlanningSimulation(){
   if(lastBacktestSeries.length<22 || lastRiskDates.length!==lastBacktestSeries.length){
     result.className='error-box'; result.textContent='05번에서 백테스트를 먼저 실행해 주세요.'; return;
   }
+  const requestedStart=document.getElementById('dcaStartDate').value || lastRiskDates[0];
+  const requestedEnd=document.getElementById('dcaEndDate').value || lastRiskDates.at(-1);
+  const selectedIndices=lastRiskDates.map((date,index)=>({date,index})).filter(item=>item.date>=requestedStart&&item.date<=requestedEnd);
+  if(selectedIndices.length<22){ result.className='error-box'; result.textContent='선택 기간에 최소 22거래일이 필요합니다.'; return; }
+  const dates=selectedIndices.map(item=>item.date), marketSeries=selectedIndices.map(item=>lastBacktestSeries[item.index]);
   const monthly=Math.max(0,finiteNumber(document.getElementById('monthlyContribution').value));
   const target=Math.max(1,finiteNumber(document.getElementById('goalAsset').value));
   const maxYears=Math.min(50,Math.max(1,Math.round(finiteNumber(document.getElementById('projectionYears').value,20))));
-  const initial=Math.max(0,getTotalInvestment());
-  let dcaValue=initial, contributions=0;
-  for(let index=1;index<lastBacktestSeries.length;index++){
-    const prior=lastBacktestSeries[index-1], current=lastBacktestSeries[index];
-    dcaValue*=prior>0?current/prior:1;
-    if(index%21===0){ dcaValue+=monthly; contributions++; }
+  const initial=Math.max(0,finiteNumber(document.getElementById('dcaInitial').value,getTotalInvestment()));
+  const fee=Math.max(0,finiteNumber(document.getElementById('dcaFee').value))/100;
+  const taxRate=Math.max(0,finiteNumber(document.getElementById('dcaTax').value))/100;
+  const cashWeight=Math.min(1,Math.max(0,finiteNumber(document.getElementById('dcaCash').value)/100));
+  const contributionDay=Math.min(28,Math.max(1,Math.round(finiteNumber(document.getElementById('dcaDay').value,1))));
+  let dcaValue=initial*(1-fee), invested=initial, contributions=0, lastContributionMonth='', valueSeries=[dcaValue];
+  for(let index=1;index<marketSeries.length;index++){
+    const prior=marketSeries[index-1], current=marketSeries[index];
+    const growth=prior>0?current/prior:1;
+    dcaValue*=cashWeight+(1-cashWeight)*growth;
+    const month=dates[index].slice(0,7), day=Number(dates[index].slice(8,10));
+    if(month!==lastContributionMonth && day>=contributionDay){
+      dcaValue+=monthly*(1-fee); invested+=monthly; contributions++; lastContributionMonth=month;
+    }
+    valueSeries.push(dcaValue);
   }
-  const invested=initial+monthly*contributions;
-  const growth=lastBacktestSeries.at(-1)/lastBacktestSeries[0];
-  const lumpValue=invested*growth;
-  const elapsed=Math.max((Date.parse(lastRiskDates.at(-1))-Date.parse(lastRiskDates[0]))/86400000/365.25,1/252);
+  const preTaxProfit=Math.max(0,dcaValue-invested), tax=preTaxProfit*taxRate;
+  dcaValue-=tax;
+  valueSeries[valueSeries.length-1]=dcaValue;
+  const growth=marketSeries.at(-1)/marketSeries[0];
+  const lumpValue=invested*(cashWeight+(1-cashWeight)*growth)*(1-fee)-Math.max(0,invested*(cashWeight+(1-cashWeight)*growth)*(1-fee)-invested)*taxRate;
+  const elapsed=Math.max((Date.parse(dates.at(-1))-Date.parse(dates[0]))/86400000/365.25,1/252);
   const base=Math.pow(growth,1/elapsed)-1;
-  const volatility=Math.max(0,annualizedVolatility(lastBacktestSeries)/100);
+  const volatility=Math.max(0,annualizedVolatility(marketSeries)/100);
   const scenarios=[
     ['보수',Math.max(-.5,base-volatility*.5)],['기준',base],['낙관',Math.min(1.5,base+volatility*.5)]
   ];
@@ -2804,8 +3130,9 @@ function runPlanningSimulation(){
   const chartMonths=Math.min(maxYears*12, 360); // 30년(360개월)까지만 그려도 추세 파악에는 충분해 렌더링 비용을 제한한다
   const compoundSeries=buildCompoundSeries(starting, monthly, base, chartMonths);
   result.className='';
-  result.innerHTML=`<div class="mini-grid" style="margin-top:14px;"><div class="subpanel"><h3>과거 경로 비교</h3>동일 투입금 ${fmtWon(invested)}<br>적립식 결과 <b>${fmtWon(dcaValue)}</b><br>전액 일시투자 결과 <b>${fmtWon(lumpValue)}</b><br><span class="${difference>=0?'pos':'neg'}">적립식 − 일시투자 ${difference>=0?'+':''}${fmtWon(difference)}</span></div><div class="subpanel"><h3>목표 ${fmtWon(target)} 도달 범위</h3><div class="metric-grid" style="margin:0;">${scenarioHtml}</div></div></div><div class="chart-wrap" style="margin-top:16px;"><canvas id="planningChart"></canvas></div><div class="note">그래프는 "기준" 시나리오(연 ${(base*100).toFixed(1)}%)로 월 적립금이 계속 복리로 불어난다고 가정했을 때의 예상 잔액이며, ${(chartMonths/12).toFixed(0)}년까지만 표시합니다. 일시투자는 전체 예정 납입액을 시작일에 모두 투자할 수 있었다고 가정합니다. 목표 계산은 과거 CAGR을 기준으로 변동성의 절반을 더하거나 뺀 단순 시나리오이며 미래 수익을 예측하거나 보장하지 않습니다.</div>`;
-  drawBacktestChart('planningChart', compoundSeries, {title:`예상 자산 성장 · 기준 시나리오 연 ${(base*100).toFixed(1)}%`, variant:'growth'});
+  const metrics=portfolioMetrics(marketSeries,dates,Math.max(0,finiteNumber(document.getElementById('riskFreeRate').value,3)));
+  result.innerHTML=`<div class="mini-grid" style="margin-top:14px;"><div class="subpanel"><h3>실제 가격 경로 적립식</h3>총 납입원금 ${fmtWon(invested)}<br>최종 평가금액 <b>${fmtWon(dcaValue)}</b><br>총수익 ${fmtWon(dcaValue-invested)} · 총수익률 ${fmtPct((dcaValue/invested-1)*100)}<br>가격경로 CAGR ${fmtPct(metrics.cagr)} · MDD ${fmtPct(metrics.mdd)} · 변동성 ${fmtPct(metrics.volatility)} · Sharpe ${Number.isFinite(metrics.sharpe)?metrics.sharpe.toFixed(2):'계산 불가'}<br>수수료율 ${(fee*100).toFixed(2)}% · 추정세금 ${fmtWon(tax)} · 현금 ${(cashWeight*100).toFixed(1)}%</div><div class="subpanel"><h3>일시금 비교</h3>동일 투입금 일시금 결과 <b>${fmtWon(lumpValue)}</b><br><span class="${difference>=0?'pos':'neg'}">적립식 − 일시투자 ${difference>=0?'+':''}${fmtWon(difference)}</span><div class="metric-grid" style="margin-top:12px;">${scenarioHtml}</div></div></div><div class="chart-wrap" style="margin-top:16px;"><canvas id="planningChart"></canvas></div><div class="note">${dates[0]} ~ ${dates.at(-1)} · 매월 ${contributionDay}일 이후 첫 거래일 납입 · 총 ${contributions}회 · 가격수익률 기준. 배당 재투자는 총수익 데이터가 없어 선택해도 반영하지 않으며, 환율도 현재 캐시에 시계열이 없어 미반영합니다. 리밸런싱 선택은 현재 통합 가격지수에서는 동일 목표비중 유지로 근사합니다. 미래 데이터는 사용하지 않습니다.</div>`;
+  drawBacktestChart('planningChart', valueSeries, {title:'납입원금 포함 평가금액 경로', variant:'growth'});
   persistState();
 }
 
@@ -2947,7 +3274,12 @@ function collectData(){
     planningSettings:{
       monthlyContribution:Math.max(0,finiteNumber(document.getElementById('monthlyContribution').value,300000)),
       goalAsset:Math.max(1,finiteNumber(document.getElementById('goalAsset').value,100000000)),
-      projectionYears:Math.min(50,Math.max(1,finiteNumber(document.getElementById('projectionYears').value,20)))
+      projectionYears:Math.min(50,Math.max(1,finiteNumber(document.getElementById('projectionYears').value,20))),
+      startDate:document.getElementById('dcaStartDate').value,endDate:document.getElementById('dcaEndDate').value,
+      initial:Math.max(0,finiteNumber(document.getElementById('dcaInitial').value,10000000)),
+      day:Math.min(28,Math.max(1,finiteNumber(document.getElementById('dcaDay').value,1))),
+      rebalance:document.getElementById('dcaRebalance').value,dividend:document.getElementById('dcaDividend').value,
+      fee:Math.max(0,finiteNumber(document.getElementById('dcaFee').value,0)),tax:Math.max(0,finiteNumber(document.getElementById('dcaTax').value,0)),cash:Math.max(0,finiteNumber(document.getElementById('dcaCash').value,0))
     },
     rebalanceSettings:getRebalanceSettings(),
     benchmarkSymbol: String(document.getElementById('benchmarkSymbol').value || 'SPY').trim().toUpperCase().slice(0,20),
@@ -2971,6 +3303,15 @@ function hydrateData(data){
   document.getElementById('monthlyContribution').value=Math.max(0,finiteNumber(planning.monthlyContribution,300000));
   document.getElementById('goalAsset').value=Math.max(1,finiteNumber(planning.goalAsset,100000000));
   document.getElementById('projectionYears').value=Math.min(50,Math.max(1,finiteNumber(planning.projectionYears,20)));
+  document.getElementById('dcaStartDate').value=/^\d{4}-\d{2}-\d{2}$/.test(planning.startDate||'')?planning.startDate:'';
+  document.getElementById('dcaEndDate').value=/^\d{4}-\d{2}-\d{2}$/.test(planning.endDate||'')?planning.endDate:'';
+  document.getElementById('dcaInitial').value=Math.max(0,finiteNumber(planning.initial,10000000));
+  document.getElementById('dcaDay').value=Math.min(28,Math.max(1,finiteNumber(planning.day,1)));
+  document.getElementById('dcaRebalance').value=['NONE','MONTHLY','QUARTERLY','ANNUAL'].includes(planning.rebalance)?planning.rebalance:'QUARTERLY';
+  document.getElementById('dcaDividend').value=planning.dividend==='YES'?'YES':'NO';
+  document.getElementById('dcaFee').value=Math.max(0,finiteNumber(planning.fee,0));
+  document.getElementById('dcaTax').value=Math.max(0,finiteNumber(planning.tax,0));
+  document.getElementById('dcaCash').value=Math.max(0,finiteNumber(planning.cash,0));
   const settings=data.rebalanceSettings || {};
   document.getElementById('rebalanceCash').value=Math.max(0,finiteNumber(settings.cash,0));
   document.getElementById('rebalanceMode').value=['MIN_SELL','FULL','BUY_ONLY'].includes(settings.mode)?settings.mode:'MIN_SELL';
@@ -3283,6 +3624,15 @@ function clearAllData(){
   document.getElementById('monthlyContribution').value = 300000;
   document.getElementById('goalAsset').value = 100000000;
   document.getElementById('projectionYears').value = 20;
+  document.getElementById('dcaStartDate').value = '';
+  document.getElementById('dcaEndDate').value = '';
+  document.getElementById('dcaInitial').value = 10000000;
+  document.getElementById('dcaDay').value = 1;
+  document.getElementById('dcaRebalance').value = 'QUARTERLY';
+  document.getElementById('dcaDividend').value = 'NO';
+  document.getElementById('dcaFee').value = 0;
+  document.getElementById('dcaTax').value = 0;
+  document.getElementById('dcaCash').value = 0;
   ['statVolatility','statMDD','statCumReturn','statCAGR','statBeta','statSharpe','statSortino'].forEach(id=>document.getElementById(id).textContent='-');
   document.getElementById('correlationMatrix').innerHTML='<div class="empty">분석 실행 후 종목 간 상관관계가 표시됩니다.</div>';
   document.getElementById('comparisonResult').innerHTML='<div class="empty">위 입력칸, 검색 결과 또는 포트폴리오에서 최대 4개 종목을 추가하세요.</div>';
@@ -3461,7 +3811,8 @@ document.getElementById('benchmarkHistory').addEventListener('input',()=>{
 });
 ['rebalanceCash','rebalanceTolerance','rebalanceFee'].forEach(id=>document.getElementById(id).addEventListener('input',()=>renderAll({renderHistory:false})));
 ['rebalanceMode','fractionalShares'].forEach(id=>document.getElementById(id).addEventListener('change',()=>renderAll({renderHistory:false})));
-['monthlyContribution','goalAsset','projectionYears'].forEach(id=>document.getElementById(id).addEventListener('input',persistState));
+['monthlyContribution','goalAsset','projectionYears','dcaStartDate','dcaEndDate','dcaInitial','dcaDay','dcaFee','dcaTax','dcaCash'].forEach(id=>document.getElementById(id).addEventListener('input',persistState));
+['dcaRebalance','dcaDividend'].forEach(id=>document.getElementById(id).addEventListener('change',persistState));
 ['fSymbol','fName','fWeight','fShares','fAvgPrice','fCurPrice'].forEach(id=>{
   document.getElementById(id).addEventListener('keydown',event=>{
     if(event.key==='Enter'){ event.preventDefault(); addHolding(); }
@@ -3469,7 +3820,16 @@ document.getElementById('benchmarkHistory').addEventListener('input',()=>{
 });
 document.getElementById('fCurrency').addEventListener('change',updateCurrencyLabels);
 document.getElementById('symbolSearch').addEventListener('keydown',event=>{
-  if(event.key==='Enter'){ event.preventDefault(); clearTimeout(searchDebounceTimer); searchSymbols(); }
+  if((event.key==='ArrowDown'||event.key==='ArrowUp') && lastSearchResults.length){
+    event.preventDefault();
+    activeSearchResultIndex=(activeSearchResultIndex+(event.key==='ArrowDown'?1:-1)+lastSearchResults.length)%lastSearchResults.length;
+    document.querySelectorAll('[data-search-index]').forEach((el,index)=>el.setAttribute('aria-selected',String(index===activeSearchResultIndex)));
+    document.querySelector(`[data-search-index="${activeSearchResultIndex}"]`)?.scrollIntoView({block:'nearest'});
+  }else if(event.key==='Enter'){
+    event.preventDefault(); clearTimeout(searchDebounceTimer);
+    if(!document.getElementById('searchResults').classList.contains('hidden') && activeSearchResultIndex>=0) selectSearchResult(activeSearchResultIndex);
+    else searchSymbols();
+  }
   if(event.key==='Escape') document.getElementById('searchResults').classList.add('hidden');
 });
 document.getElementById('symbolSearch').addEventListener('input', searchSymbolsDebounced);

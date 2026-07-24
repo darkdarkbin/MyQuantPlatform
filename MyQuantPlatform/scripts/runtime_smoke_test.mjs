@@ -67,19 +67,44 @@ const IN_PAGE_TEST_SCRIPT = `
   }catch(e){ fail('초기화', e); }
 
   try{
+    const rets=dailyReturns([100,110,99]);
+    if(Math.abs(rets[0]-.1)>1e-12 || Math.abs(rets[1]+.1)>1e-12) throw new Error('dailyReturns 계산 오류');
+    if(Math.abs(calcMDD([100,80,120])+20)>1e-12) throw new Error('MDD 계산 오류');
+    if(normalizeSearchText('BRK.B')!==normalizeSearchText('brk-b')) throw new Error('티커 정규화 오류');
+    if(!Number.isNaN(finiteNumber(null,NaN))) throw new Error('null이 0으로 변환됨');
+    pass('단위 계산: 수익률/MDD/결측값/티커 정규화');
+  }catch(e){ fail('단위 계산', e); }
+
+  try{
     setVal('symbolSearch','AAPL');
-    searchSymbols();
+    await searchSymbols();
     await waitFor(() => lastSearchResults && lastSearchResults.length>0, {label:'AAPL 검색 결과'});
     if(lastSearchResults[0].symbol !== 'AAPL') throw new Error('1위 결과가 AAPL이 아님: '+lastSearchResults[0].symbol);
     pass('검색: "AAPL" 입력 시 1위 결과가 AAPL');
   }catch(e){ fail('검색 기능', e); }
 
   try{
-    selectSearchResult(0);
+    setVal('symbolSearch','배당성장');
+    await searchSymbols();
+    if(!lastSearchResults?.some(item=>item.symbol==='VIG')){
+      const entry=searchIndex.find(item=>item.symbol==='VIG');
+      throw new Error('VIG 미검색 · '+JSON.stringify({entry,query:normalizeSearchText('배당성장'),results:lastSearchResults}));
+    }
+    pass('검색: 한글 별칭 "배당성장" → VIG');
+  }catch(e){ fail('한글 별칭 검색', e); }
+
+  try{
+    setVal('symbolSearch','AAPL');
+    await searchSymbols();
+    selectSearchResult(lastSearchResults.findIndex(item=>item.symbol==='AAPL'));
     await waitFor(() => currentResearch?.symbol==='AAPL', {label:'리서치 패널 심볼 반영'});
     await waitFor(() => {
       const t=$('researchAiSummary').textContent;
-      return t && t!=='종목을 선택하면 표시됩니다.' && t!=='생성 중…';
+      return $('researchMetrics').textContent.trim()
+        && t
+        && t!=='종목을 선택하면 표시됩니다.'
+        && t!=='데이터를 확인하는 중입니다.'
+        && t!=='생성 중…';
     }, {label:'AI 기업요약 렌더링', timeout:5000});
     const metricsText = $('researchMetrics').textContent;
     if(!metricsText || !metricsText.trim()) throw new Error('researchMetrics가 비어 있음');
@@ -120,10 +145,21 @@ const IN_PAGE_TEST_SCRIPT = `
   }catch(e){ fail('ETF 엑스레이(07)', e); }
 
   try{
-    runPortfolioDiagnostics();
-    await waitFor(() => $('themeExposureResult').textContent.trim().length>0 && $('portfolioCoachResult').textContent.trim().length>0, {label:'포트폴리오 진단', timeout:8000});
+    await runPortfolioDiagnostics();
+    await waitFor(() => $('themeExposureResult').textContent.includes('%') && $('portfolioCoachResult').textContent.trim().length>0, {label:'포트폴리오 진단', timeout:8000});
     pass('포트폴리오 진단(테마/국가/리스크시나리오/AI코치) 실행 성공');
   }catch(e){ fail('포트폴리오 진단(신규)', e); }
+
+  try{
+    await waitFor(()=>$('portfolioHealthResult').textContent.includes('/ 100'),{label:'건강도 점수'});
+    pass('포트폴리오 건강도 점수·감점 근거 렌더링 성공');
+  }catch(e){ fail('포트폴리오 건강도', e); }
+
+  try{
+    runPortfolioABComparison();
+    await waitFor(() => $('portfolioABResult').textContent.includes('동일 기간 지표'), {label:'A/B 비교', timeout:12000});
+    pass('포트폴리오 A/B 비교 성공');
+  }catch(e){ fail('포트폴리오 A/B 비교', e); }
 
   try{
     runPlanningSimulation();
@@ -139,6 +175,7 @@ const IN_PAGE_TEST_SCRIPT = `
   }catch(e){ fail('배당 계산기(신규)', e); }
 
   try{
+    await openResearchSymbol('AAPL');
     toggleWatchlist();
     await waitFor(() => loadWatchlist().some(item=>item.symbol==='AAPL'), {label:'AAPL 워치리스트 추가'});
     renderWatchlist();
@@ -184,6 +221,33 @@ const IN_PAGE_TEST_SCRIPT = `
   }catch(e){ fail('리서치 패널 ETF 분기(QQQ)', e); }
 
   try{
+    const vig=await loadMarketSnapshot('VIG');
+    if(vig.exchange!=='NYSE Arca' || vig.liquidity?.basis!=='최근 20거래일 평균 거래량') throw new Error('VIG 시장/유동성 메타데이터 오류');
+    const iqq=await loadMarketSnapshot('IQQ');
+    if(iqq.exchange!=='NASDAQ' || iqq.dataStatus?.history!=='short' || (iqq.etf?.topHoldings||[]).length<100) throw new Error('IQQ 신규상장/구성 데이터 오류');
+    if(iqq.periods?.['1y']) throw new Error('IQQ 1년 수익률을 짧은 이력으로 잘못 계산함');
+    pass('필수 ETF: VIG/IQQ 시장·거래량·신규상장·구성 데이터 검증');
+  }catch(e){ fail('VIG/IQQ 검증', e); }
+
+  try{
+    const originalFetch=window.fetch;
+    window.fetch=async()=>({ok:true,status:200,json:async()=>{throw new Error('broken json')}});
+    let caught=false;
+    try{ await fetchJson(new URL('https://example.com/broken.json')); }catch(error){ caught=error.message.includes('응답을 읽지 못했습니다'); }
+    window.fetch=originalFetch;
+    if(!caught) throw new Error('손상 JSON 방어 실패');
+    pass('손상 JSON이 전체 앱 대신 데이터 오류로 격리됨');
+  }catch(e){ fail('손상 JSON 처리', e); }
+
+  try{
+    await openResearchSymbol('NOFILE999');
+    if($('researchMetrics').textContent.trim()) throw new Error('없는 티커에 이전 지표가 남아 있음');
+    if(/QQQ|Invesco/.test($('researchAiSummary').textContent)) throw new Error('없는 티커에 이전 AI 요약이 남아 있음');
+    if(!$('researchLoading').textContent.includes('필요') && !$('researchLoading').textContent.includes('못했습니다')) throw new Error('캐시 미존재 안내가 없음');
+    pass('티커 전환 실패 시 이전 종목 데이터 완전 초기화');
+  }catch(e){ fail('이전 종목 데이터 누수 방지', e); }
+
+  try{
     const before = JSON.stringify(holdings.map(h=>h.symbol));
     persistState();
     holdings=[];
@@ -211,6 +275,14 @@ async function main(){
   if(typeof window.HTMLElement.prototype.scrollIntoView !== 'function'){
     window.HTMLElement.prototype.scrollIntoView = () => {};
   }
+  window.HTMLCanvasElement.prototype.getContext = () => ({
+    setTransform(){}, clearRect(){}, beginPath(){}, arc(){}, stroke(){}, fill(){}, fillRect(){},
+    moveTo(){}, lineTo(){}, closePath(){}, arcTo(){}, fillText(){},
+    measureText(value){ return {width:String(value).length*7}; },
+    createLinearGradient(){ return {addColorStop(){}}; },
+    set font(_value){}, set textBaseline(_value){}, set strokeStyle(_value){}, set lineWidth(_value){},
+    set lineCap(_value){}, set fillStyle(_value){}
+  });
 
   window.fetch = async (url) => {
     const u = new URL(String(url), 'https://example.com/');
